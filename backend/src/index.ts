@@ -2,6 +2,7 @@ import express from "express";
 import { Server, Socket } from "socket.io";
 import http from "http"; 
 import cors from "cors"; 
+import {UserManager} from "./managers/UserManager"
 
 const app = express();
 app.use(express.json());
@@ -13,11 +14,20 @@ const io = new Server(server,{
         origin:"*"
     }
 });
+const userManager = new UserManager();
 
+// roomManager.joinRoom(user);
 io.on('connection', (socket:Socket) => {
-    console.log('A user connected',socket);
-    // Send a message to the client when they connect
-    socket.emit('message', 'Welcome! Your connection with the server is established.');
+    console.log('A user connected',socket.id);
+  
+
+
+    socket.on('joinRoom',({name}:{name:string})=>{
+      userManager.addUser(name,socket);
+    //   const updName = name.toLowerCase();
+    //   roomManager.joinRoom(updName,socket);
+    //  console.log(roomManager.getUsers())
+    })
     
     // Listen for messages from the client
     socket.on('clientMessage', (message) => {
