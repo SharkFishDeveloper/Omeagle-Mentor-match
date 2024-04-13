@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import  { useCallback, useEffect, useRef, useState } from 'react'
+import {  useParams } from 'react-router-dom'
 import { useSocket } from '../Providers/Socket';
 
 const server = new RTCPeerConnection({iceServers:[{
@@ -11,9 +11,9 @@ const server = new RTCPeerConnection({iceServers:[{
 const JoinRoom = () => {
    const {id:roomId} =  useParams();
    console.log("Room id is - ",roomId,typeof roomId)
-   const location  = useLocation();
+//    const location  = useLocation();
    const socket = useSocket(); 
-   let SDP='';
+   const [SDP,setSDP] = useState<string>('');
    const [isConnected,setisConnected] = useState(false);
    const [stream,setStream] = useState<MediaStream|null>();
    const videoRef = useRef<HTMLVideoElement>(null);
@@ -26,19 +26,22 @@ const JoinRoom = () => {
         const sdp = await server.createOffer();
         await server.setLocalDescription(sdp);
         socket?.emit("offer",{sdp,roomId});
-        console.log(sdp);
-        },[socket]
+        console.log(sdp.sdp);
+        },[socket,roomId]
    )
 
-   const createAns = useCallback(async(sdp:any)=>{
-    server.setRemoteDescription(sdp);
+   const createAns = useCallback(async()=>{
     const answer =await server.createAnswer();
-    await server.setRemoteDescription(sdp);
+    // const remoteDescription = {
+    //     type: SDP?.type, // Set the type ("offer" or "answer")
+    //     sdp: SDP?.sdp,
+    //   };
+    // await server.setRemoteDescription(remoteDescription);
     await server.setLocalDescription(answer);
     console.log("ans sdp = ",answer);
     socket?.emit("answer",{sdp:answer,roomId});
     setisConnected(!isConnected);
-   },[socket]);
+   },[socket,SDP,isConnected,roomId]);
 
    
   const getUserMedia = useCallback(async()=>{
@@ -56,18 +59,37 @@ const JoinRoom = () => {
 
 
    useEffect(()=>{
-    socket?.on("offer",({sdp})=>{
-        // const sessionDescription = new RTCSessionDescription(sdp);
-        console.log("Type of sdp ",sdp)
-        server.setRemoteDescription(sdp);
+    socket?.on("offer",({sdp}:{sdp:string})=>{
+        const remoteDescription = {
+            type: sdp.type, // Set the type ("offer" or "answer")
+            sdp: sdp.sdp,
+          };
+          console.log("remoteDescription sdp ",remoteDescription)
+        server.setRemoteDescription(remoteDescription)
+            .then(() => {
+                // Remote description successfully set
+                console.log("Remote description set successfully.");
+            })
+            .catch(error => {
+                // Handle any errors
+                console.error("Error setting remote description:", error);
+                return;
+            });
+            
         alert(`Someone wants to connect with you - remote SDP - ${sdp}`);
  
         console.log(`sdp -> ${JSON.stringify(sdp)}`);
     })
-    socket?.on("call-accepted",({sdp})=>{
+    socket?.on("call-accepted",async({sdp})=>{
         console.log("Accepting call - ",sdp);
         console.log(` The user accepted call - remote SDP - ${sdp}`)
-        SDP = sdp;
+        // SDP = sdp;
+        setSDP(sdp);
+        const remoteDescription = {
+                type: sdp?.type, // Set the type ("offer" or "answer")
+                sdp: sdp?.sdp,
+              };
+        await server.setRemoteDescription(remoteDescription);
         setisConnected(!isConnected);
         alert(`Call accepted from user - ${sdp}`);
     })
@@ -75,12 +97,12 @@ const JoinRoom = () => {
     return ()=>{
         socket?.off();
     }
-   },[]);
+   },[isConnected, socket]);
 
 
    useEffect(()=>{
     getUserMedia();
-   },[])
+   },[getUserMedia])
 
    const handleReciveStream = useCallback((ev:RTCTrackEvent)=>{
     const stream = ev.streams[0];
@@ -124,7 +146,7 @@ const JoinRoom = () => {
     )}
     <br />
     {!isConnected && (
-        <button onClick={()=>createAns(SDP)}>Accept call </button>
+        <button onClick={()=>createAns()}>Accept call </button>
     )}
     <video ref={videoRef}  width={400} height={400} autoPlay={true}></video>
     <video ref={remoteVideoRef}  width={400} height={400} autoPlay={true}></video>

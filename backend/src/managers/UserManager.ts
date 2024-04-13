@@ -46,12 +46,12 @@ export class UserManager{
 
     }
     handleOffer(socket:Socket){
-        socket.on("offer",({sdp,roomId})=>{
-            console.log("SDP",sdp," roomId -> ",roomId)
+        socket.on("offer",({sdp,roomId}:{sdp:string,roomId:string})=>{
+            console.log("Calling - SDP",sdp,);
             this.roomManager.onOffering(sdp,roomId,socket.id);
         })
-        socket.on("answer",({sdp,roomId})=>{
-            console.log("Answering user -> SDP",sdp," roomId -> ",roomId);
+        socket.on("answer",({sdp,roomId}:{sdp:string,roomId:string})=>{
+            console.log("Answering user -> SDP");
             this.roomManager.onAnswer(sdp,roomId,socket.id);
         })
     }
