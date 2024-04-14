@@ -23,12 +23,14 @@ export class RoomManager{
         const {user1,user2} = users;
         user1.socket.emit("connected-to-room",{id});
         user2.socket.emit("connected-to-room",{id});
+        console.log("Emiited joingin room from backend")
         return;
     }
     onOffering(sdp:string,roomID:string,socket:string){
         const room = this.rooms.get(roomID);
         const recievingUser = room?.user1.socket.id === socket ? room?.user2.socket : room?.user1.socket; 
         console.log("user1 -<",socket," user2-<",recievingUser?.id);
+        console.log(sdp);
         recievingUser?.emit("offer",{sdp});
     }
 
@@ -38,7 +40,19 @@ export class RoomManager{
         recievingUser?.emit("call-accepted",{sdp});
     }
 
+    onIceCandidates(roomId: string, senderSocketid: string, candidate: any, type: "sender" | "receiver") {
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            return;
+        }
+        const receivingUser = room.user1.socket.id === senderSocketid ? room.user2: room.user1;
+        console.log("ice in room-manager");
+        receivingUser.socket.emit("add-ice-candidate", ({candidate, type}));
+    }
+
     generate(){
         return ROOMS_ID_COUNT++;
     }
 }
+
+

@@ -47,12 +47,16 @@ export class UserManager{
     }
     handleOffer(socket:Socket){
         socket.on("offer",({sdp,roomId}:{sdp:string,roomId:string})=>{
-            console.log("Calling - SDP",sdp,);
+           console.log("Calling - SDP",sdp);
             this.roomManager.onOffering(sdp,roomId,socket.id);
         })
         socket.on("answer",({sdp,roomId}:{sdp:string,roomId:string})=>{
-            console.log("Answering user -> SDP");
+            console.log("Answering user -> SDP",sdp);
             this.roomManager.onAnswer(sdp,roomId,socket.id);
         })
+        socket.on("add-ice-candidate", ({candidate, roomId, type}) => {
+            console.log("Ice running in backend");          
+            this.roomManager.onIceCandidates(roomId, socket.id, candidate, type);
+        });
     }
 }
