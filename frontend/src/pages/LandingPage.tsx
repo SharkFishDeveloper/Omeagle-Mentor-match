@@ -17,18 +17,19 @@ function LandingPage() {
         socket!.emit("clientMessage",{name,school:selectedOption});
       }
       else socket!.emit("joinRoom",{name});
+      router(`/room/`,{state:{name}});
     }
 
-    useEffect(()=>{
-      socket?.on("connected-to-room",({id}):void=>{
-        alert(`Connect with id - ${id}`);
-        router(`/room/${id}`,{state:{name}});
-      });
+    // useEffect(()=>{
+    //   socket?.on("connected-to-room",({id}):void=>{
+    //     alert(`Connect with id - ${id}`);
+    //     router(`/room/${id}`,{state:{name}});
+    //   });
       
-      return () => {
-        socket?.off();
-      };
-    },[socket,name])
+    //   return () => {
+    //     socket?.off();
+    //   };
+    // },[socket,name])
 
 
   return (
@@ -54,6 +55,7 @@ function LandingPage() {
       <button onClick={()=>setChoice(!choice)}>{choice ? "Or enter selectively":"Change choice"}</button>
      </div>
      <p>{selectedOption}</p>
+     
     </div>
   );
 }

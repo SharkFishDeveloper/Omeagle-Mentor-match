@@ -1,122 +1,181 @@
 import  { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {  useLocation, useParams } from 'react-router-dom'
+import {  useLocation} from 'react-router-dom'
 import { useSocket } from '../Providers/Socket';
+import { Link } from 'react-router-dom';
 
 
 const JoinRoom = () => {
-    const {id:roomId} = useParams();
     const {state} = useLocation();
-    console.log(state);
     const {name} = state;
     const socket = useSocket();
-    const [localaudiotrack,setLocalaudiotrack] = useState<MediaStreamTrack|null>();
-    const [localvideotrack,setLocalvideotrack] = useState<MediaStreamTrack|null>();
-    const [remoteaudiotrack,setRemoteaudiotrack] = useState<MediaStreamTrack|null>();
-    const [remotevideotrack,setRemotevideotrack] = useState<MediaStreamTrack|null>();
     const videoRef = useRef<HTMLVideoElement>();
-    const pc = useMemo(() => new RTCPeerConnection({iceServers:[{
-        urls:[
-            "stun:stun.l.google.com:19302"
-        ]
-    }]}), []);
-    // const pc = new RTCPeerConnection({iceServers:[{
-    //     urls:[
-    //         "stun:stun.l.google.com:19302"
-    //     ]
-    // }]})
+    const [localaudiotrack,setLocalaudiotrack] = useState<MediaStreamTrack|null>(null);
+    const [localvideotrack,setLocalvideotrack] = useState<MediaStreamTrack|null>(null);
+    const [remoteaudiotrack,setRemoteaudiotrack] = useState<MediaStreamTrack|null>(null);
+    const [remotevideotrack,setRemotevideotrack] = useState<MediaStreamTrack|null>(null);
+    const [sendingPc, setSendingPc] = useState<null | RTCPeerConnection>(null);
+    const [receivingPc, setReceivingPc] = useState<null | RTCPeerConnection>(null);
+    const [isConnected,setisConnected] = useState(false);
 
-    const getUserMedia =async ()=>{
-        const stream = await window.navigator.mediaDevices.getUserMedia({
-            audio:true,
-            video:true
-        }) 
-        const audioTrack = stream.getAudioTracks()[0]
-        const videoTrack = stream.getVideoTracks()[0]
-        setLocalaudiotrack(audioTrack);
-        setLocalvideotrack(videoTrack);
-        if (localaudiotrack && localvideotrack) {  
-        pc.addTrack(localaudiotrack);
-        pc.addTrack(localvideotrack);
-        }
-        
-        if(videoRef.current){
-            videoRef.current.srcObject = stream;
-        }
-    }
-
-    useEffect(()=>{
-        getUserMedia();
-    })
-
-    const sendOffer = useCallback(async()=>{
-        
-        //if (localaudiotrack && localvideotrack) {  
-        // pc.addTrack(localaudiotrack);
-        // pc.addTrack(localvideotrack);
-        // console.log(localaudiotrack);
-        // console.log(localvideotrack);
-        // console.log("added tack");
-        const sdp = await pc.createOffer();
-        console.log("created sdp ", sdp);
-        try {
-            await pc.setLocalDescription(sdp);
-            socket?.emit("offer",{sdp:sdp,roomId:roomId}) ; 
-        } catch (error) {
-            console.log(error);
-        }
-    //}
-    },[pc, roomId, socket])
     
 
-    const handleAns = useCallback(async({sdp}:{sdp:string})=>{
-        console.log("Recieved sdp ",sdp);
-        alert("Someone wants to talk with you !! ");
-        const remoteDescription = {
-            type: sdp.type, // Set the type ("offer" or "answer")
-            sdp: sdp.sdp,
-        };
-        pc.setRemoteDescription(remoteDescription);
-        // const pc =  new RTCPeerConnection({iceServers:[{
-        //     urls:[
-        //         "stun:stun.l.google.com:19302"
-        //     ]
-        // }]});
-        const creatSDP = await pc.createAnswer();
-        socket?.emit("answer",{sdp:creatSDP,roomId});
-        console.log("Create offer for ans",creatSDP);
-        console.log("Recived sdp ",remoteDescription);
-        },[pc, roomId, socket])
+    const getUserMedia = useCallback(async () => {
+        const stream = await window.navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+        const audioTrack = stream.getAudioTracks()[0];
+        const videoTrack = stream.getVideoTracks()[0];
+        setLocalaudiotrack(audioTrack);
+        setLocalvideotrack(videoTrack);
+      
+        // Add tracks to sendingPc if it exists
+        if (sendingPc) {
+          try {
+            sendingPc?.addTrack(audioTrack);
+            sendingPc?.addTrack(videoTrack);
+            console.log("Added tracks");
+          } catch (error) {
+            console.log("Error in adding tracks", error);
+          }
+        }
+      
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, [sendingPc]);
+      
+      useEffect(() => {
+        getUserMedia();
+      }, []);
 
-    const callAccpted = async({sdp}:{sdp:string})=>{
-        console.log("SDP recieved from requested user, you requested",sdp)
-
-    }
+    
 
     useEffect(()=>{
-        const randomTime = Math.random() * 1000 + 100; 
-        const timerId = setTimeout(() => {
-            sendOffer();
-        }, randomTime);
 
-        socket?.on("offer",handleAns);
+        socket?.on("connected-to-room",({id})=>{
+            const pc = new RTCPeerConnection({
+                iceServers:[
+               {
+                urls:[
+                    "stun:stun.l.google.com:19302",
+                    "stun:stun1.l.google.com:19302"
+                ]
+                }]})
+                // const randomT = Math.random() + 1000;
+                // setTimeout(() => {
+                    
+                // }, randomT); 
+                // const media = async ()=>{
+                //     const stream = await window.navigator.mediaDevices.getUserMedia({
+                //         audio:true,
+                //         video:true
+                //     }) 
+                //     const audioTrack = await stream.getAudioTracks()[0]
+                //     const videoTrack =await stream.getVideoTracks()[0]
+                //     // console.log(audioTrack);
+                    
+                //     setLocalaudiotrack(audioTrack);
+                //     setLocalvideotrack(videoTrack);
+                //     try {
+                //         await pc?.addTrack(audioTrack);
+                //         await pc?.addTrack(videoTrack);
+                //     console.log("Added tracks");
+                    
+                //     } catch (error) {
+                //         console.log("error in adding tracks",error)
+                //     }
+                    
+                //     if(videoRef.current){
+                //         videoRef.current.srcObject = stream;
+                //     }
+                // }
+                // media();
 
-        socket?.on("call-accepted",callAccpted)
+            setSendingPc(pc);
+            const offerFc = async()=>{
+                
+                const sdp = await pc.createOffer();
+                await pc.setLocalDescription(sdp);
+                console.log("Creating sdp for offering ",sdp);
+                
+                socket.emit("offer",{sdp,roomId:id});
+            }
 
-        return ()=>{
-        clearTimeout(timerId);
-        socket?.off("offer",handleAns);
-        socket?.off("call-accepted",callAccpted);
-        }   
-    },[handleAns, roomId, sendOffer, socket])
+            socket.on("ask-offer",()=>{
+                offerFc();
+            })
+           
+
+
+            socket.on("offer",async({sdp:sdpA}:{sdp:string})=>{
+                try {
+                    const remoteDescription = {
+                        type: sdpA.type, // Set the type ("offer" or "answer")
+                        sdp: sdpA.sdp,
+                    };
+                    await pc.setRemoteDescription(remoteDescription);
+                    const creatSdp = await pc.createAnswer();
+                    socket.emit("answer",{sdp:creatSdp,roomId:id})
+                    console.log("Creating ans ",creatSdp);
+                    
+                    await pc.setLocalDescription(creatSdp);
+                    console.log("Recived sdp",remoteDescription);
+                    // alert("Someone invites you ")
+                    // setOfferSent(false);
+                } catch (error) {
+                    console.error("erro in offer",error)
+                }                 
+            });
+            
+
+            socket?.on("call-accepted",async({sdp:sdpc}:{sdp:any})=>{
+                console.log("After calling ",sdpc);
+                await pc.setRemoteDescription(sdpc);
+                // alert("Call-accepted")
+            })
+            pc.onicecandidate = ()=>{
+                console.log("Ice local");
+                offerFc();
+            }
+            return ()=>{
+                socket.off();
+            }
+        })
+    },[socket])
+
+
+
 
 
   return (
     <div>
         <p>{name}- we will soon connect you with someone</p>
         <video ref={videoRef} autoPlay ></video>
-        <button>Ask to connect</button>
+        <Link to={"/"} onClick={window.location.reload}><h1>Home page</h1></Link>
     </div>
   )
 }
 
-export default JoinRoom
+export default JoinRoom;
+
+
+
+                // try {
+                // if(localaudiotrack && localvideotrack){
+                //     pc.addTrack(localaudiotrack);
+                // pc.addTrack(localvideotrack);
+                // }
+                // } catch (error) {
+                //     console.error(error);
+                // }
+                // if (localaudiotrack) {
+                //     console.error("added tack");
+                //     console.log(localaudiotrack)
+                //     pc.addTrack(localaudiotrack)
+                // }
+                // if (localvideotrack) {
+                //     console.error("added tack");
+                //     console.log(localvideotrack)
+                //     pc.addTrack(localvideotrack)
+                // }

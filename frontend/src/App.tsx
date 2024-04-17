@@ -8,7 +8,7 @@ import JoinRoom from "./pages/JoinRoom"
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage/>} />
-          <Route path="/room/:id" element={<JoinRoom/>} />
+          <Route path="/room" element={<JoinRoom/>} />
         </Routes>
       </BrowserRouter>
     )
