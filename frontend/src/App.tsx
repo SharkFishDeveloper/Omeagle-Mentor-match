@@ -1,6 +1,5 @@
 import { BrowserRouter,Routes,Route } from "react-router-dom"
 import LandingPage from "./pages/LandingPage"
-import JoinRoom from "./pages/JoinRoom"
 
   function App() {
 
@@ -8,7 +7,6 @@ import JoinRoom from "./pages/JoinRoom"
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage/>} />
-          <Route path="/room" element={<JoinRoom/>} />
         </Routes>
       </BrowserRouter>
     )

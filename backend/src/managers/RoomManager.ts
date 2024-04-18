@@ -23,7 +23,7 @@ export class RoomManager{
         const {user1,user2} = users;
         user1.socket.emit("connected-to-room",{id});
         user2.socket.emit("connected-to-room",{id});
-        user1.socket.emit("ask-offer")
+        user2.socket.emit("ask-offer")
         console.log("Emiited joingin room from backend")
         return;
     }
