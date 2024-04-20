@@ -22,9 +22,11 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
     const [sender,setSender] = useState(false);
     const [remotemediastream,setRemotemediastream] = useState<MediaStream|null>();
     const remoteVideoRef = useRef<HTMLVideoElement>();
+    const [user2name,setuser2name] = useState<string|null>();
     
     useEffect(()=>{
-      socket?.on("connected-to-room",({id})=>{
+      socket?.on("connected-to-room",({id,username})=>{
+        setuser2name(username);
         const pc = new RTCPeerConnection({
           iceServers:[
          {
@@ -42,7 +44,6 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
           }
 
           pc.onnegotiationneeded = async()=>{
-            alert("Nego needed")
             const sdp = await pc.createOffer();
             pc.setLocalDescription(sdp);
             socket.emit("offer",{sdp,roomId:id});
@@ -163,11 +164,12 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
 
   return (
     <div>
-        <p>{name}- we will soon connect you with someone</p>
+        {user2name ? (<p>{name} - You are currently communicating </p>):(<p>Finding someone</p>)}
         <video autoPlay width={400} height={400} ref={localVideoRef} />
         {/* {remotevideotrack ? ( */}
           <video autoPlay width={400} height={400} ref={remoteVideoRef} />
         {/* ):(null)} */}
+        {user2name ? (<p>Connected with - {user2name}</p>):(<p>Connecting to someone ...</p>)}
         <Link to={"/"} onClick={window.location.reload}><h1>Home page</h1></Link>
     </div>
   )
