@@ -19,6 +19,9 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
     const [isConnected,setisConnected] = useState(false);
     const [localMediaStream, setLocalMediaStream] = useState<MediaStream | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>();
+    const [sender,setSender] = useState(false);
+    const [remotemediastream,setRemotemediastream] = useState<MediaStream|null>();
+    const remoteVideoRef = useRef<HTMLVideoElement>();
     
     useEffect(()=>{
       socket?.on("connected-to-room",({id})=>{
@@ -30,7 +33,7 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
               "stun:stun1.l.google.com:19302"
           ]
           }]})   
-
+          setSendingPc(pc);
           if(localaudiotrack && localvideotrack){
             pc.addTrack(localaudiotrack!); 
             pc.addTrack(localvideotrack!);  
@@ -38,58 +41,122 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
             return;
           }
 
+          pc.onnegotiationneeded = async()=>{
+            alert("Nego needed")
+            const sdp = await pc.createOffer();
+            pc.setLocalDescription(sdp);
+            socket.emit("offer",{sdp,roomId:id});
+            // offer();
+            console.log("on negotiation neeeded, sending offer");
+          }
 
-            const offer = async()=>{
-            const offerC =await pc.createOffer();
-            await pc.setLocalDescription(offerC);
-            console.log("Creating sdp for offering ",offerC);
-                  
-            socket.emit("offer",{sdp:offerC,roomId:id});
+          pc.onicecandidate =async (e)=>{
+            console.log("sending ice ,sender")
+            if(e.candidate){
+              socket.emit("add-ice-candidate",{
+                candidate:e.candidate,
+                type:"sender",
+                roomId:id
+              })
             }
-          
+          }
 
-          socket.on("ask-offer",offer);
-            
+            socket?.on("add-ice-candidate",({candidate,type})=>{
+              console.log("REcieviig ice locally")
+              if(type == "sender"){
+                setReceivingPc(pc=>{
+                  pc?.addIceCandidate(candidate);
+                })
+              }else{
+                setSendingPc(pc=>{
+                  pc?.addIceCandidate(candidate);
+                })
+              }
+            })
             
             socket?.on("offer",async({sdp:sdpA}:{sdp:string})=>{
-                const pc = new RTCPeerConnection(); //! 
+              const pc = new RTCPeerConnection();
                 const remoteDescription = {
                   type: sdpA.type, // Set the type ("offer" or "answer")
                   sdp: sdpA.sdp,
                   };
+                  setReceivingPc(pc); 
+                  const stream = new MediaStream();
+                  remoteVideoRef.current.srcObject = stream;
+                  // if(remoteVideoRef.current){
+                  //   remoteVideoRef.current.srcObject = stream;
+                  // }
+                  setRemotemediastream(stream);
+                  window.pcr = pc;
                   console.log("recieved sdp after offering ",remoteDescription)
                   await pc.setRemoteDescription(remoteDescription);
+
+
+
                   const creatSdp = await pc.createAnswer();
                   socket.emit("answer",{sdp:creatSdp,roomId:id})
                   await pc.setLocalDescription(creatSdp);
+
+                  pc.onicecandidate = (e)=>{
+                    console.log("sending ice ,receiver")
+                    socket.emit("add-ice-candidate",{candidate:e.candidate,
+                      type:"receiver"
+                    })
+                  }
+
+
+
+                  pc.ontrack = ({track,type})=>{
+                    alert("on tracks")
+
+                  }
               console.log("Creating ans ",creatSdp);
+              const track1 = pc.getTransceivers()[0].receiver.track;
+            const track2 = pc.getTransceivers()[1].receiver.track;
+            console.log(track1,track2);
+            if(track1.kind == "audio"){
+              //@ts-ignore
+              setRemoteaudiotrack(track1);
+              setRemotevideotrack(track2);
+              
+              // setRemoteaudiotrack(track);
+            }else if(track1.kind=="video"){
+              //@ts-ignore
+              setRemoteaudiotrack(track1);
+              setRemotevideotrack(track2)        
+                                   
+            }
+            if(remoteVideoRef.current.srcObject){
+              remoteVideoRef.current.srcObject.addTrack(track1);
+            remoteVideoRef.current.srcObject.addTrack(track2);
+            }else{
+              console.error("not added in srcObj")
+            }
+            remoteVideoRef.current?.play();
             })
 
+            
             socket.on("call-accepted",async({sdp})=>{
               console.log("call-accepted sdp  ",sdp)
-              await pc.setRemoteDescription(sdp);
-              alert("Call-accepted")
+              setSendingPc(pc=>{
+                pc?.setRemoteDescription(sdp)
+                return pc;
+              })
             })
 
-            pc.onnegotiationneeded = async()=>{
-              
-              console.log("on negotiation neeeded, sending offer");
-              offer();
-            }
-            // pc.onicecandidate = ()=>{
-            //   offer();
-            //   console.log("Gie ice")
-            // }
+
             
           })
           return ()=>{
             socket?.off();
           }
-    },[socket])
+    },[socket, sender, localaudiotrack])
          
   useEffect(()=>{
-    if (localVideoRef && localaudiotrack && localvideotrack) {
-      const mediaStream = new MediaStream([localaudiotrack, localvideotrack]);
+    // /localVideoRef && localaudiotrack && 
+    if (localvideotrack) {
+      //localaudiotrack,
+      const mediaStream = new MediaStream([ localvideotrack]);
       localVideoRef.current.srcObject = mediaStream;
     }
   },[localaudiotrack, localvideotrack])
@@ -98,6 +165,9 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
     <div>
         <p>{name}- we will soon connect you with someone</p>
         <video autoPlay width={400} height={400} ref={localVideoRef} />
+        {/* {remotevideotrack ? ( */}
+          <video autoPlay width={400} height={400} ref={remoteVideoRef} />
+        {/* ):(null)} */}
         <Link to={"/"} onClick={window.location.reload}><h1>Home page</h1></Link>
     </div>
   )
@@ -106,112 +176,3 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
 
 
 export default JoinRoom;
-        
-        // socket.on("ask-offer",()=>{
-
-        //     const creeatOffer = async()=>{
-        //     const offer =await pc.createOffer();
-        //     await pc.setLocalDescription(offer);
-        //     console.log("Creating sdp for offering ",offer);
-                  
-        //     socket.emit("offer",{sdp:offer,roomId:id});
-        //     }
-        //     creeatOffer();
-        //     })
-
-        //         socket.on("offer",async({sdp:sdpA}:{sdp:string})=>{
-        //           alert("Someone wantst to connect")
-        //           const remoteDescription = {
-        //               type: sdpA.type, // Set the type ("offer" or "answer")
-        //               sdp: sdpA.sdp,
-        //               };
-        //           await pc.setRemoteDescription(remoteDescription);
-        //           const creatSdp = await pc.createAnswer();
-        //           socket.emit("answer",{sdp:creatSdp,roomId:id})
-        //           console.log("Creating ans ",creatSdp);
-        //         })
-
-
-                
-
-
-    // useEffect(() => {
-    //   console.log("Audio track:", localaudiotrack);
-    //   console.log("Video track:", localvideotrack);
-    // }, [localaudiotrack,localvideotrack]);
-    
-    // useEffect(()=>{
-
-    //     socket?.on("connected-to-room",({id})=>{
-    //         const pc = new RTCPeerConnection({
-    //             iceServers:[
-    //            {
-    //             urls:[
-    //                 "stun:stun.l.google.com:19302",
-    //                 "stun:stun1.l.google.com:19302"
-    //             ]
-    //             }]})             
-    //              getUserMedia(pc);
-
-    //             if(localaudiotrack && localvideotrack){
-    //               console.log("in fx");
-                  
-    //             }
-    //         setSendingPc(pc);
-    //         if(localaudiotrack && localvideotrack){
-              
-    //           const offerFc = async()=>{
-    //             console.log("Insidemain fx ");
-                
-    //             const sdp = await pc.createOffer();
-    //             await pc.setLocalDescription(sdp);
-    //             console.log("Creating sdp for offering ",sdp);
-                
-    //             socket.emit("offer",{sdp,roomId:id});
-    //           }
-
-    //           socket.on("ask-offer",()=>{
-    //             offerFc();
-    //           })
-           
-
-
-    //           socket.on("offer",async({sdp:sdpA}:{sdp:string})=>{
-    //             try {
-    //                 const remoteDescription = {
-    //                     type: sdpA.type, // Set the type ("offer" or "answer")
-    //                     sdp: sdpA.sdp,
-    //                 };
-    //                 await pc.setRemoteDescription(remoteDescription);
-    //                 const creatSdp = await pc.createAnswer();
-    //                 socket.emit("answer",{sdp:creatSdp,roomId:id})
-    //                 console.log("Creating ans ",creatSdp);
-                    
-    //                 await pc.setLocalDescription(creatSdp);
-    //                 console.log("Recived sdp",remoteDescription);
-    //                 // alert("Someone invites you ")
-    //                 // setOfferSent(false);
-    //             } catch (error) {
-    //                 console.error("erro in offer",error)
-    //             }                 
-    //           });
-            
-
-    //           socket?.on("call-accepted",async({sdp:sdpc}:{sdp:any})=>{
-    //             console.log("After calling ",sdpc);
-    //             await pc.setRemoteDescription(sdpc);
-    //           })
-    //           pc.onicecandidate = ()=>{
-    //             console.log("Ice local");
-    //             offerFc();
-    //           }
-    //         }
-    //         return ()=>{
-    //             socket.off();
-    //         }
-    //     })
-    // },[getUserMedia, localaudiotrack, localvideotrack, socket])
-
-
-
-
