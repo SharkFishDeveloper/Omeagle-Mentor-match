@@ -19,11 +19,18 @@ const userManager = new UserManager();
 // roomManager.joinRoom(user);
 io.on('connection', (socket:Socket) => {
     console.log('A user connected',socket.id);
-  
 
 
-    socket.on('joinRoom',({name}:{name:string})=>{
-      userManager.addUser(name,socket);
+
+    socket.on('joinRoom',({name,university}:{name:string,university?:string})=>{
+      console.log("University ",university)
+      if(university){
+        
+        userManager.addBigUser(name,socket,university);
+      }
+      else{
+        userManager.addUser(name,socket);
+      }
     //   const updName = name.toLowerCase();
     //   roomManager.joinRoom(updName,socket);
     //  console.log(roomManager.getUsers())

@@ -39,7 +39,7 @@ function LandingPage() {
 
     const handleJoinRoom = ()=>{
       if(selectedOption!=""){
-        socket!.emit("clientMessage",{name,school:selectedOption});
+        socket!.emit("joinRoom",{name,university:selectedOption});
       }
       else socket!.emit("joinRoom",{name});
      if(localaudiotrack && localvideotrack){
