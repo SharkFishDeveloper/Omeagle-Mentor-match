@@ -3,10 +3,17 @@ import { Server, Socket } from "socket.io";
 import http from "http"; 
 import cors from "cors"; 
 import {UserManager} from "./managers/UserManager"
+import { userRouter } from "./routes/userRouter";
+import { mentorRouter } from "./routes/mentorRouter";
+import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(express.json());
-app.use(cors())
+app.use(cookieParser())
+app.use(cors({
+  origin:"http://localhost:5173",
+  credentials:true
+}))
 const server  = http.createServer(app);
 
 const io = new Server(server,{
@@ -48,10 +55,9 @@ io.on('connection', (socket:Socket) => {
   });
 
 
-app.get("/users",(req,res)=>{
-    console.log("all users")
-    return res.json({message:"All users"})
-})
+app.use("/app/user",userRouter);
+app.use("/app/mentor",mentorRouter);
+
 
 server.listen(3000,()=>{
     console.log("Server running 3000")

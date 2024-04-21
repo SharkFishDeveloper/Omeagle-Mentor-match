@@ -55,6 +55,7 @@ function LandingPage() {
   return (
     <div>
      <h1>Landing page</h1>
+     <button onClick={()=>router("/home")}>Mentor-match</button>
      <p>Connect with anyone</p>
      <div>
       <p>Enter name</p>
