@@ -98,7 +98,7 @@ mentorRouter.get("/",authMiddleware,async(req,res)=>{
     if(searchname=== null){
         return res.status(400).json({message:"Add a name"});
     }
-    const users = await prisma.user.findMany({
+    const users = await prisma.mentor.findMany({
         where:{
             username:{
                 contains:searchname as string
