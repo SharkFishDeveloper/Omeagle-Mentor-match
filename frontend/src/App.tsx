@@ -5,6 +5,7 @@ import Login from "./screens/Login"
 import Signup from "./screens/Signup"
 import MentorLogin from "./screens/MentorLogin"
 import MentorSignin from "./screens/MentorSignin"
+import About from "./screens/About"
 
   function App() {
 
@@ -15,6 +16,7 @@ import MentorSignin from "./screens/MentorSignin"
           <Route path="/home" element={<HomePage/>} />
           <Route path="/login" element={<Login/>} />
           <Route path="/signup" element={<Signup/>} />
+          <Route path="/about" element={<About/>} />
           <Route path="/mentorlogin" element={<MentorLogin/>} />
           <Route path="/mentorsignup" element={<MentorSignin/>} />
 

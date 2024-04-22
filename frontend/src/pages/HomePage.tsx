@@ -6,8 +6,8 @@ import Appbar from '../components/Appbar'
 const HomePage = () => {
     useEffect(()=>{
         const getData =async ()=>{
-            const ans = await axios.get(`${BACKEND_URL}/app/user/login`);
-            console.log(ans.data);
+            // const ans = await axios.get(`${BACKEND_URL}/app/user/login`);
+            console.log("wokring");
         }
         getData();
     })

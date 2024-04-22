@@ -3,7 +3,14 @@ import prisma from "../db";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../utils";
 import bcrypt from "bcrypt";
+import { CustomRequest, authMiddleware } from "../middleware/authMiddleware";
 //! add zod for signup and login for both mentor and user
+
+
+interface UserUpdate {
+    username?:string,
+    imageUrl?:string
+}
 
 const userRouter = express.Router();
 
@@ -68,6 +75,29 @@ userRouter.put("/signout",(req,res)=>{
         return res.json({message:"Success"});
     }else{
         return res.status(400).json({message:"Already signout out !!"});
+    }
+})
+
+userRouter.put("/update",authMiddleware,async(req:CustomRequest,res)=>{
+    try {
+        const {username,imageUrl}:UserUpdate= req.body;
+        const updateUser:UserUpdate = {};
+        if(username)updateUser.username = username;
+        if(imageUrl)updateUser.imageUrl = imageUrl;
+        if(username || imageUrl){
+            const updatedUser = await prisma.user.update({
+                where: {
+                    id: req.user.id
+                },
+                data: updateUser
+            });
+            return res.json({message:"Success",user: updatedUser})
+        }
+        else{
+            return res.json({message:"Could not update user "})
+        }
+    } catch (error) {
+        return res.status(400).json({message:"User update failed !!"})
     }
 })
 

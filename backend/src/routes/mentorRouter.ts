@@ -3,8 +3,16 @@ import prisma from "../db";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../utils";
 import bcrypt from "bcrypt";
-import { authMiddleware } from "../middleware/authMiddleware";
+import { CustomRequest, authMentorMiddleware, authMiddleware } from "../middleware/authMiddleware";
 //! add zod for signup and login for both mentor and user
+
+interface UpdateMentor {
+    username?:string,
+    imageUrl?:string,
+    university?:string,
+    specializations?:string[]
+}
+
 
 const mentorRouter = express.Router();
 
@@ -92,20 +100,24 @@ mentorRouter.get(`/:id`,authMiddleware,async(req,res)=>{
     }
 })
 
+
 mentorRouter.get("/",authMiddleware,async(req,res)=>{
     try {
-        const searchname = req.query["search"];
-    if(searchname=== null){
-        return res.status(400).json({message:"Add a name"});
-    }
-    const users = await prisma.mentor.findMany({
+        const {username:searchname,specializations,university}:{username:string|undefined,specializations:string[]|undefined,university:string|undefined}= req.body;
+        console.log("search",searchname)
+        // return res.json({searchname,specializations,university});
+        if (!searchname && !specializations?.length && !university) {
+            return res.status(303).json({ message: "No search criteria provided!" });
+          }
+        const users = await prisma.mentor.findMany({
         where:{
-            username:{
-                contains:searchname as string
-            }
+           username :searchname ?  {contains : searchname as string }:undefined,
+           specializations :specializations? {hasEvery : specializations}:undefined,
+           university :university ? { contains: university } : undefined
         }
     })
-    console.log("found users",users);
+    //username:{contains:searchname as string}
+    // console.log("found users",filter);
     
     return res.json({message:`success`,users:users})
     } catch (error) {
@@ -114,6 +126,33 @@ mentorRouter.get("/",authMiddleware,async(req,res)=>{
 })
 
 
+
+
+mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
+
+    try {
+    const {username,imageUrl,university,specializations}:UpdateMentor= req.body;
+    
+    const mentorDataToUpdate:UpdateMentor = {};
+    if (username) mentorDataToUpdate.username = username;
+    if (imageUrl) mentorDataToUpdate.imageUrl = imageUrl;
+    if (university) mentorDataToUpdate.university = university;
+    if (specializations) mentorDataToUpdate.specializations = specializations;
+
+    const userId = req.user.id;
+    const userUpdated = await prisma.mentor.update({
+        where:{
+            id:userId 
+        },
+        data:mentorDataToUpdate
+    })
+    console.log(userUpdated);
+    return res.json({message:userUpdated})
+    } catch (error) {
+        console.log("Mentor update error",error)
+        return res.status(405).json({message:"Mentor update failed !!"})
+    }
+})
 
 
 export {mentorRouter};
