@@ -3,7 +3,7 @@ import prisma from "../db";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../utils";
 import bcrypt from "bcrypt";
-import { CustomRequest, authMentorMiddleware, authMiddleware } from "../middleware/authMiddleware";
+import { CustomRequest, authMentorMiddleware, authMiddleware, initialMentorRequest } from "../middleware/authMiddleware";
 import { forEachChild } from "typescript";
 //! add zod for signup and login for both mentor and user
 
@@ -12,11 +12,14 @@ interface UpdateMentor {
     imageUrl?:string,
     university?:string,
     specializations?:string[],
-    timeslots?:number[]
+    timeslots?:number[],
+    price? :number
 }
 
 
 const mentorRouter = express.Router();
+
+mentorRouter.get("/",initialMentorRequest);
 
 mentorRouter.post("/login",async(req,res)=>{
     try {
@@ -133,13 +136,14 @@ mentorRouter.get("/",authMiddleware,async(req,res)=>{
 mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
 
     try {
-    const {username,imageUrl,university,specializations,timeslots}:UpdateMentor= req.body;
+    const {price,username,imageUrl,university,specializations,timeslots}:UpdateMentor= req.body;
     
     const mentorDataToUpdate:UpdateMentor = {};
     if (username) mentorDataToUpdate.username = username;
     if (imageUrl) mentorDataToUpdate.imageUrl = imageUrl;
     if (university) mentorDataToUpdate.university = university;
     if (specializations) mentorDataToUpdate.specializations = specializations;
+    if (specializations) mentorDataToUpdate.price = price;
     if(timeslots){
         // return res.json({message:"No time slots"});
         timeslots.sort((a, b) => a - b);

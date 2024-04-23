@@ -3,7 +3,8 @@ import prisma from "../db";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../utils";
 import bcrypt from "bcrypt";
-import { CustomRequest, authMiddleware } from "../middleware/authMiddleware";
+import { CustomRequest, authMiddleware, initialUserRequest } from "../middleware/authMiddleware";
+import { v4 as uuidv4 } from 'uuid';
 //! add zod for signup and login for both mentor and user
 
 
@@ -13,6 +14,10 @@ interface UserUpdate {
 }
 
 const userRouter = express.Router();
+
+
+userRouter.get("/",initialUserRequest);
+
 
 userRouter.post("/login",async(req,res)=>{
     try {
@@ -98,6 +103,43 @@ userRouter.put("/update",authMiddleware,async(req:CustomRequest,res)=>{
         }
     } catch (error) {
         return res.status(400).json({message:"User update failed !!"})
+    }
+})
+
+userRouter.put("/connect-with-mentor/:id",authMiddleware,async(req,res)=>{
+    try {
+        const Id = req.params["id"];
+        const mentorId = Id.split("=")[1];
+        const {username,money} = req.body;
+        const mentor = await prisma.mentor.findUnique({
+            where:{id:mentorId}
+        })
+
+        const user = await prisma.user.findFirst({
+            where:{
+                username:username
+            }
+        });
+        if(!user){
+            return res.status(400).json({message:"No such user exists !!"})
+        }
+        const roomId = uuidv4();
+        user.roomId.push(roomId);
+        if(!mentor){
+            return res.status(400).json({message:"Mentor does not exist !!"})
+        }
+        else if(mentor){
+            if(mentor.price !== money){
+                return res.json({message:"Please enter appropriate amount !!"})
+            }
+           
+            mentor.usersName.push(username);
+            mentor.roomId.push(roomId);
+        }
+        user.mentorName.push(mentor.username);
+        return res.json({message:"success",roomId:roomId})
+    } catch (error) {
+        console.log(error);
     }
 })
 
