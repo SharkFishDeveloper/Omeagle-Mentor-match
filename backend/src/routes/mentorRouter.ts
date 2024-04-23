@@ -4,13 +4,15 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../utils";
 import bcrypt from "bcrypt";
 import { CustomRequest, authMentorMiddleware, authMiddleware } from "../middleware/authMiddleware";
+import { forEachChild } from "typescript";
 //! add zod for signup and login for both mentor and user
 
 interface UpdateMentor {
     username?:string,
     imageUrl?:string,
     university?:string,
-    specializations?:string[]
+    specializations?:string[],
+    timeslots?:number[]
 }
 
 
@@ -131,14 +133,24 @@ mentorRouter.get("/",authMiddleware,async(req,res)=>{
 mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
 
     try {
-    const {username,imageUrl,university,specializations}:UpdateMentor= req.body;
+    const {username,imageUrl,university,specializations,timeslots}:UpdateMentor= req.body;
     
     const mentorDataToUpdate:UpdateMentor = {};
     if (username) mentorDataToUpdate.username = username;
     if (imageUrl) mentorDataToUpdate.imageUrl = imageUrl;
     if (university) mentorDataToUpdate.university = university;
     if (specializations) mentorDataToUpdate.specializations = specializations;
-
+    if(timeslots){
+        // return res.json({message:"No time slots"});
+        timeslots.sort((a, b) => a - b);
+        for (let i = 0; i < timeslots.length; i++) {
+            if(timeslots[i] - timeslots[i-1] <=1 ){
+                return res.status(300).json({message:"Time slots are too close. Keep difference of atleast 2 !!"})
+            }
+        }
+        mentorDataToUpdate.timeslots = timeslots;
+    };
+    
     const userId = req.user.id;
     const userUpdated = await prisma.mentor.update({
         where:{

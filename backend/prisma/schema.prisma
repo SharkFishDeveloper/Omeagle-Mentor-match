@@ -34,4 +34,5 @@ model Mentor {
   comments String[]
   imageUrl String?
   popularity Int @default(0)
+  timeslots Int[]
 }
