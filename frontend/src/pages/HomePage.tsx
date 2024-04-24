@@ -1,19 +1,15 @@
 import axios from 'axios'
 import React, { useEffect } from 'react'
 import { BACKEND_URL } from '../../utils/backendUrl'
-import Appbar from '../components/Appbar'
+import { useUser } from '../Providers/Socket'
+
+
 
 const HomePage = () => {
-    useEffect(()=>{
-        const getData =async ()=>{
-            // const ans = await axios.get(`${BACKEND_URL}/app/user/login`);
-            console.log("wokring");
-        }
-        getData();
-    })
+  const user = useUser();
   return (
     <div>
-        <Appbar/>
+  <p>User - {user ? JSON.stringify(user) : 'Loading...'}</p>
     </div>
   )
 }

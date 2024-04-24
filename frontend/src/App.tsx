@@ -6,14 +6,16 @@ import Signup from "./screens/Signup"
 import MentorLogin from "./screens/MentorLogin"
 import MentorSignin from "./screens/MentorSignin"
 import About from "./screens/About"
+import Appbar from "./components/Appbar"
 
   function App() {
 
     return (
       <BrowserRouter>
+      <Appbar/>
         <Routes>
-          <Route path="/" element={<LandingPage/>} />
-          <Route path="/home" element={<HomePage/>} />
+          <Route path="/connect" element={<LandingPage/>} />
+          <Route path="/" element={<HomePage/>} />
           <Route path="/login" element={<Login/>} />
           <Route path="/signup" element={<Signup/>} />
           <Route path="/about" element={<About/>} />

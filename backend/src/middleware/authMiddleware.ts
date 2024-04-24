@@ -11,7 +11,7 @@ export interface CustomRequest extends Request{
 
 const authMiddleware = async(req:CustomRequest,res:Response,next:NextFunction)=>{
     try {
-        const token= req.headers.token as string;
+        const token= req.cookies.token;
         console.log("Token",token);
        
     if(!token){
@@ -36,7 +36,7 @@ const authMiddleware = async(req:CustomRequest,res:Response,next:NextFunction)=>
 
 const authMentorMiddleware = async(req:CustomRequest,res:Response,next:NextFunction)=>{
     try {
-        const token= req.headers.token as string;
+        const token= req.cookies.token;
         console.log("Token",token);
        
     if(!token){
@@ -61,7 +61,7 @@ const authMentorMiddleware = async(req:CustomRequest,res:Response,next:NextFunct
 
 const initialUserRequest = async(req:CustomRequest,res:Response,next:NextFunction)=>{
     try {
-        const token= req.headers.token as string;
+        const token= req.cookies.token;
         console.log("Token",token);
        
     if(!token){
@@ -90,7 +90,7 @@ const initialUserRequest = async(req:CustomRequest,res:Response,next:NextFunctio
 
 const initialMentorRequest = async(req:CustomRequest,res:Response,next:NextFunction)=>{
     try {
-        const token= req.headers.token as string;
+        const token= req.cookies.token;
         console.log("Token",token);
        
     if(!token){

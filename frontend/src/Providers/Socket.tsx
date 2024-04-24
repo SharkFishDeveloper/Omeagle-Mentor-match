@@ -1,12 +1,46 @@
-import { createContext, useContext, useEffect, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Socket, io } from "socket.io-client";
 import { BACKEND_URL } from "../../utils/backendUrl";
+import axios from "axios";
 
 const SocketContext = createContext<Socket|undefined>(undefined);
 
+export interface User{
+     id:string,
+     email:string,
+     password:string,
+     username:string,
+     imageUrl?:string,
+     roomId?:string[],
+     mentorName?:string[]
+}
 
-
-
+export interface Mentor {
+    id: string;
+    email: string;
+    password: string;
+    username: string;
+    university: string;
+    specializations: string[];
+    rating: number;
+    userMentored: number;
+    mentoredId: string[];
+    comments: string[];
+    imageUrl?: string | null;
+    popularity: number;
+    timeslots: number[];
+    usersName: string[];
+    roomId: string[];
+    price: number;
+  }
+  
+// "id": "5814d73d-e7a7-4211-938b-89b65887d1bc",
+//         "email": "world@w.com",
+//         "password": "$2b$10$n7o9kuCriQE/kWDD8T8hrebmnxOdtzxxzKQho1As5ALxO0q4rOsz6",
+//         "username": "world",
+//         "imageUrl": null,
+//         "roomId": [],
+//         "mentorName": []
 export const useSocket = (): Socket | undefined => {
     const socket = useContext(SocketContext);
     if (!socket) {
@@ -33,3 +67,32 @@ export const SocketProvider = (props:any)=>{
     );
    
 }
+const UserContext = createContext<{ user: User|Mentor | null; setUser: React.Dispatch<React.SetStateAction<User | null>> } | undefined>(undefined);
+
+export const useUser = () => {
+  return useContext(UserContext);
+};
+
+export const UserProvider = ({ children }) => {
+  const [user, setUser] = useState<User|null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/app/user`,{withCredentials:true}); // Replace '/api/user' with your endpoint
+        setUser(response.data.user);
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  return (
+    <UserContext.Provider value={{ user, setUser }}>
+      {children}
+    </UserContext.Provider>
+  );
+};

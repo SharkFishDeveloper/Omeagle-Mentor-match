@@ -27,7 +27,7 @@ mentorRouter.post("/login",async(req,res)=>{
         if(!email||!password){
             return res.status(400).json({message:"Invalid email or password"});
         }
-    const user = await prisma.mentor.findFirst({
+    const user = await prisma.mentor.findUnique({
         where:{
             email
         }
@@ -39,7 +39,7 @@ mentorRouter.post("/login",async(req,res)=>{
     }else{
         const token = await jwt.sign(user.id,JWT_SECRET_KEY);
         res.cookie('token',token,{httpOnly:true,secure:true,sameSite:true,maxAge:3600000})
-        return res.json({message:"Logged in successfully !!"})
+        return res.json({message:"Logged in successfully !!",user:user})
 
     }
     } catch (error) {
