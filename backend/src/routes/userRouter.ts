@@ -131,14 +131,14 @@ userRouter.put("/connect-with-mentor/:id",authMiddleware,async(req,res)=>{
         }
         else if(mentor){
             if(mentor.price !== money){
-                return res.json({message:"Please enter appropriate amount !!"})
+                return res.status(400).json({message:"Please enter appropriate amount !!"})
             }
            
             mentor.usersName.push(username);
             mentor.roomId.push(roomId);
         }
         user.mentorName.push(mentor.username);
-        return res.json({message:"success",roomId:roomId})
+        return res.json({message:"success",roomId:roomId,user:user})
     } catch (error) {
         console.log(error);
     }

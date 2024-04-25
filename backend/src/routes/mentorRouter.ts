@@ -78,6 +78,32 @@ mentorRouter.post("/signup",async(req,res)=>{
     }
 })
 
+
+
+mentorRouter.post("/search",authMiddleware,async(req,res)=>{
+    try {
+        const {username:searchname,selectedTags:specializations,university}:{username:string|undefined,selectedTags:string[]|undefined,university:string|undefined}= req.body;
+        console.log("search",searchname)
+        // return res.json({searchname,specializations,university});
+        if (!searchname && !specializations?.length && !university) {
+            return res.status(303).json({ message: "No search criteria provided!" });
+          }
+        const users = await prisma.mentor.findMany({
+        where:{
+           username :searchname ?  {contains : searchname as string }:undefined,
+           specializations :specializations? {hasEvery : specializations}:undefined,
+           university :university ? { contains: university } : undefined
+        }
+    })
+    //username:{contains:searchname as string}
+    // console.log("found users",filter);
+    
+    return res.json({message:`success`,users:users})
+    } catch (error) {
+        console.log("errro in fiding user",error)
+    }
+})
+
 mentorRouter.get(`/:id`,authMiddleware,async(req,res)=>{
     try {
 
@@ -106,29 +132,6 @@ mentorRouter.get(`/:id`,authMiddleware,async(req,res)=>{
 })
 
 
-mentorRouter.get("/",authMiddleware,async(req,res)=>{
-    try {
-        const {username:searchname,specializations,university}:{username:string|undefined,specializations:string[]|undefined,university:string|undefined}= req.body;
-        console.log("search",searchname)
-        // return res.json({searchname,specializations,university});
-        if (!searchname && !specializations?.length && !university) {
-            return res.status(303).json({ message: "No search criteria provided!" });
-          }
-        const users = await prisma.mentor.findMany({
-        where:{
-           username :searchname ?  {contains : searchname as string }:undefined,
-           specializations :specializations? {hasEvery : specializations}:undefined,
-           university :university ? { contains: university } : undefined
-        }
-    })
-    //username:{contains:searchname as string}
-    // console.log("found users",filter);
-    
-    return res.json({message:`success`,users:users})
-    } catch (error) {
-        console.log("errro in fiding user",error)
-    }
-})
 
 
 

@@ -10,6 +10,7 @@ const HomePage = () => {
   return (
     <div>
   <p>User - {user ? JSON.stringify(user) : 'Loading...'}</p>
+  {user && <p>See roomId for connecting with mentors</p>}
     </div>
   )
 }
