@@ -1,13 +1,16 @@
 import { useState,useEffect, useRef } from 'react'
 import {BACKEND_URL,univerOptions} from "../../utils/backendUrl.js"
-import { useSocket } from '../Providers/Socket.js';
+import { useSocket, useUser } from '../Providers/Socket.js';
 import {useNavigate} from "react-router-dom"
 import JoinRoom from './JoinRoom';
 
 
 function LandingPage() {
+    const user = useUser(); 
     const router  = useNavigate();
-    const [name,setName]  = useState("");
+    const [name,setName]  = useState(user ? user?.user?.username : "");
+    const roomId = user?.user?.roomId.length;
+    console.log("RoomId",roomId)
     const [school,setSchool]  = useState("");
     const [choice,setChoice] = useState(true);
     const [selectedOption, setSelectedOption] = useState("");
@@ -17,6 +20,7 @@ function LandingPage() {
     const [joined,setJoined] = useState(false);
     const [open,setOpen] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const [roomIdConnect,setRoomIdConnect] = useState("");
 
   async function GetMedia() {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -38,8 +42,11 @@ function LandingPage() {
   },[joined])
 
     const handleJoinRoom = ()=>{
-      if(selectedOption!=""){
+      if(selectedOption!="" && roomIdConnect==null){
         socket!.emit("joinRoom",{name,university:selectedOption});
+      }
+      else if(selectedOption!="" && roomIdConnect!==""){
+        socket!.emit("joinRoom",{name,university:roomIdConnect});
       }
       else socket!.emit("joinRoom",{name});
      if(localaudiotrack && localvideotrack){
@@ -59,7 +66,7 @@ function LandingPage() {
      <p>Connect with anyone</p>
      <div>
       <p>Enter name</p>
-      <input type="text" placeholder='Your name' onChange={(e)=>setName(e.target.value)}/>
+      <input type="text" placeholder={name} onChange={(e)=>setName(e.target.value)}/>
       { !choice && (
         <div>
           <p>Enter choice</p>
@@ -76,6 +83,9 @@ function LandingPage() {
       <br />
       <button onClick={()=>setChoice(!choice)}>{choice ? "Or enter selectively":"Change choice"}</button>
      </div>
+     {roomId>0 ? (
+      <input type="text" placeholder='Enter roomId' onChange={(e)=>setRoomIdConnect(e.target.value)}/>
+     ):null}
      <p>{selectedOption}</p>
      <video ref={videoRef} autoPlay muted playsInline style={{ maxWidth: '100%', maxHeight: '100%' }} />
     </div>
