@@ -112,11 +112,11 @@ userRouter.put("/connect-with-mentor/:id",authMiddleware,async(req,res)=>{
         const Id = req.params["id"];
         const mentorId = Id.split("=")[1];
         const {username,money} = req.body;
-        const mentor = await prisma.mentor.findUnique({
+        var mentor = await prisma.mentor.findUnique({
             where:{id:mentorId}
         })
 
-        const user = await prisma.user.findFirst({
+        var user = await prisma.user.findFirst({
             where:{
                 username:username
             }
@@ -125,20 +125,41 @@ userRouter.put("/connect-with-mentor/:id",authMiddleware,async(req,res)=>{
             return res.status(400).json({message:"No such user exists !!"})
         }
         const roomId = uuidv4();
-        user.roomId.push(roomId);
+        const userRooms = user.roomId;
+        userRooms.push(roomId);
         if(!mentor){
             return res.status(400).json({message:"Mentor does not exist !!"})
         }
-        else if(mentor){
-            if(mentor.price !== money){
-                return res.status(400).json({message:"Please enter appropriate amount !!"})
-            }
+        const mentorRooms = mentor.roomId;
+        mentorRooms.push(roomId);
+        //! change this 
+        // else if(mentor){
+        //     if(mentor.price !== money){
+        //         return res.status(400).json({message:"Please enter appropriate amount !!"})
+        //     }
            
-            mentor.usersName.push(username);
-            mentor.roomId.push(roomId);
-        }
-        user.mentorName.push(mentor.username);
-        return res.json({message:"success",roomId:roomId,user:user})
+        //     mentorRooms.push(roomId);
+        // }
+
+        mentor = await prisma.mentor.update({
+            where:{id:mentorId},
+            data:{
+                roomId:mentorRooms,
+                usersName:{push:username},
+                userMentored:{increment:1}
+            }
+        })
+        console.log("updated mentor",mentor)
+        user = await prisma.user.update({
+            where:{username:username},
+            data:{
+                username:username,
+                roomId:userRooms,
+                mentorName:{push:mentor.username}
+            }
+        })
+        console.log("updated user",user)
+        return res.json({message:"success",roomId:roomId,user:user,mentor:mentor})
     } catch (error) {
         console.log(error);
     }

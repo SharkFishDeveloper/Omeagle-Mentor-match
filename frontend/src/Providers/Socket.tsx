@@ -67,20 +67,27 @@ export const SocketProvider = (props:any)=>{
     );
    
 }
-const UserContext = createContext<{ user: User|Mentor | null; setUser: React.Dispatch<React.SetStateAction<User | null>> } | undefined>(undefined);
+const UserContext = createContext<{ user: User|Mentor| null; setUser: React.Dispatch<React.SetStateAction<User | null>> } | undefined>(undefined);
 
 export const useUser = () => {
   return useContext(UserContext);
 };
-
+export type UserType = User | Mentor;
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState<User|null>(null);
+  const [user, setUser] = useState<UserType|null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/app/user`,{withCredentials:true}); // Replace '/api/user' with your endpoint
-        setUser(response.data.user);
+        let response = await axios.get(`${BACKEND_URL}/app/user`,{withCredentials:true});
+        if(response.data.message=== "No user exists !!"){
+          
+          console.log(response.data)
+        } 
+        else{
+          response = await axios.get(`${BACKEND_URL}/app/mentor`,{withCredentials:true});
+          setUser(response.data.user);
+        }
         console.log(response.data);
       } catch (error) {
         console.error('Error fetching user:', error);
