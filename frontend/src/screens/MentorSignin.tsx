@@ -21,6 +21,7 @@ const MentorSignin = () => {
     console.log(resp.data.message);
     alert(resp.data.message);
     setUser(resp.data.user);
+    navigate("/");
       } catch (error) {
         console.log(error.response.data.message)
         alert(error.response.data.message)

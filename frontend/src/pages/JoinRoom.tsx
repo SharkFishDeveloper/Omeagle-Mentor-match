@@ -1,7 +1,7 @@
 import  { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSocket } from '../Providers/Socket';
-import { Link } from 'react-router-dom';
-
+import { Link, useNavigate } from 'react-router-dom';
+import { FaPhoneAlt } from "react-icons/fa";
 
 const JoinRoom = ({name,localaudiotrack,localvideotrack}:
   {
@@ -23,10 +23,15 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
     const [remotemediastream,setRemotemediastream] = useState<MediaStream|null>();
     const remoteVideoRef = useRef<HTMLVideoElement>();
     const [user2name,setuser2name] = useState<string|null>();
-    
+    const [message, setMessage] = useState('');
+    const [sendmessages, setsendmessages] = useState([]);
+    const [receivedMessages, setreceivedMessages] = useState([]);
+    const [roomId,setRoomId] = useState("");
+    const navigate = useNavigate();
     useEffect(()=>{
       socket?.on("connected-to-room",({id,username})=>{
         setuser2name(username);
+        setRoomId(id);
         const pc = new RTCPeerConnection({
           iceServers:[
          {
@@ -162,6 +167,40 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
     }
   },[localaudiotrack, localvideotrack])
 
+
+  const sendMessage = ()=>{
+    try {
+      socket?.emit("send-message",message);
+      setsendmessages([...sendmessages,message])
+      console.log("send-message",message);
+      setMessage("");
+    } catch (error) {
+      console.log(error);
+      setMessage('');
+    }
+    console.log("clikced")
+  }
+
+  useEffect(() => {
+    // Listen for incoming messages
+    socket?.on('receive-message', message=> {
+      setreceivedMessages([...receivedMessages, message]);
+      console.log('receive-message', message);
+  });
+
+    return () => {
+        // Disconnect socket when component unmounts
+        socket?.off("send-message");
+        socket?.off("receive-message");
+ 
+    };
+}, [message, receivedMessages, socket]);
+
+
+
+
+
+
   return (
     <div>
         {user2name ? (<p>{name} - You are currently communicating </p>):(<p>Finding someone</p>)}
@@ -170,7 +209,71 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
           <video autoPlay width={400} height={400} ref={remoteVideoRef} />
         {/* ):(null)} */}
         {user2name ? (<p>Connected with - {user2name}</p>):(<p>Connecting to someone ...</p>)}
-        <Link to={"/"} onClick={window.location.reload}><h1>Home page</h1></Link>
+        <div>
+        <div className="h-screen flex flex-col">
+            <div className="flex-grow overflow-y-auto">
+                {sendmessages.map((msg, index) => (
+                    <div key={index} className="flex justify-end mb-2">
+                        <div className="bg-blue-500 text-white text-md p-2 rounded-lg">
+                            {msg}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="flex-grow overflow-y-auto">
+                {receivedMessages.map((msg, index) => (
+                    <div key={index} className="flex justify-end mb-2">
+                        <div className="bg-green-400 text-white text-md p-2 rounded-lg">
+                            {msg}
+                        </div>
+                    </div>
+                ))}
+
+
+            </div>
+            <div className="flex-grow overflow-y-auto bg-gray-100 p-4">
+    {receivedMessages.map((msg, index) => (
+        <div key={index} className="flex justify-start mb-2">
+            <div className="bg-blue-500 text-white text-md p-3 rounded-lg">
+                {msg}
+            </div>
+        </div>
+    ))}
+</div>
+
+
+<div>
+    <button className="rounded bg-red-500 h-[3rem] w-[5rem] items-center justify-center flex hover:scale-110 transition-all" onClick={()=>{
+      window.location.reload();
+      navigate("/")
+    }}>
+        <FaPhoneAlt className="text-white"></FaPhoneAlt>
+    </button>
+</div>
+
+
+<div className="flex justify-center p-4">
+    <input
+        type="text"
+        className="border border-gray-300 rounded-l-lg p-3 w-full focus:outline-none focus:border-blue-500"
+        placeholder="Type a message..."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+    />
+    <button
+        className="bg-blue-500 text-white px-6 py-3 rounded-r-lg ml-2 hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
+        onClick={sendMessage}
+    >
+        Send
+    </button>
+</div>
+        </div>
+
+
+
+
+     </div>
+        <Link to={"/"} onClick={()=>window.location.reload()}><h1>Home page</h1></Link>
     </div>
   )
 }

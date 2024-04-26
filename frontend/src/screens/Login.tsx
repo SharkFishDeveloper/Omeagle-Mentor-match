@@ -20,7 +20,8 @@ const Login = () => {
       console.log(resp.data.message);
       setUser(resp.data.user);
       
-      return alert(resp.data.message)
+       alert(resp.data.message);
+      navigate("/");
       } catch (error) {
         console.log(error.response.data.message);
         

@@ -10,7 +10,7 @@ function LandingPage() {
     const router  = useNavigate();
     const [name,setName]  = useState(user ? user?.user?.username : "");
     const roomId = user?.user?.roomId.length;
-    console.log("RoomId",roomId)
+    // console.log("RoomId",roomId)
     const [school,setSchool]  = useState("");
     const [choice,setChoice] = useState(true);
     const [selectedOption, setSelectedOption] = useState("");
@@ -21,6 +21,7 @@ function LandingPage() {
     const [open,setOpen] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [roomIdConnect,setRoomIdConnect] = useState("");
+
 
   async function GetMedia() {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -59,6 +60,17 @@ function LandingPage() {
       return <JoinRoom name={name} localaudiotrack={localaudiotrack} localvideotrack={localvideotrack}/>
     }
 
+    // const sendMessage = ()=>{
+    //   try {
+    //     socket?.emit("send-message",message);
+    //     console.log("Sent -mesasge",message)
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // }
+
+
+
   return (
     <div>
      <h1>Landing page</h1>
@@ -88,6 +100,8 @@ function LandingPage() {
      ):null}
      <p>{selectedOption}</p>
      <video ref={videoRef} autoPlay muted playsInline style={{ maxWidth: '100%', maxHeight: '100%' }} />
+     <input type="text" />
+     
     </div>
   );
 

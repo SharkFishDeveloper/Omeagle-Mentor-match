@@ -19,6 +19,7 @@ const Signup = () => {
     },{withCredentials:true})  
     console.log(resp.data.message);
     setUser(resp.data.user);
+    navigate("/");
       } catch (error) {
         console.log(error.response.data.message)
         alert(error.response.data.message)

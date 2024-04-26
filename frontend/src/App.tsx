@@ -9,6 +9,7 @@ import MentorSignin from "./screens/MentorSignin"
 import About from "./screens/About"
 import Appbar from "./components/Appbar"
 import MentorCard from "./components/MentorCard"
+import UpdateMentor from "./components/UpdateMentor"
 
   function App() {
 
@@ -25,6 +26,7 @@ import MentorCard from "./components/MentorCard"
           <Route path="/mentorsignup" element={<MentorSignin/>} />
           <Route path="/search" element={<Search/>} />
           <Route path="/mentor/:id" element={<MentorCard/>} />
+          <Route path="/update-mentor" element={<UpdateMentor/>} />
         </Routes>
       </BrowserRouter>
     )

@@ -166,7 +166,7 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
         data:mentorDataToUpdate
     })
     console.log(userUpdated);
-    return res.json({message:userUpdated})
+    return res.json({message:"Success",user:userUpdated})
     } catch (error) {
         console.log("Mentor update error",error)
         return res.status(405).json({message:"Mentor update failed !!"})

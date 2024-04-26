@@ -19,7 +19,7 @@ const MentorLogin = () => {
       },{withCredentials:true})  
       console.log(resp.data.message);
       setUser(resp.data.user);
-      
+      navigate("/");
       return alert(resp.data.message)
       } catch (error) {
         console.log(error.response.data.message);

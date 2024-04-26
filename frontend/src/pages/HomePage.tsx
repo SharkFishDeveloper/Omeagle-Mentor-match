@@ -1,11 +1,13 @@
 
 import  { useState } from 'react'
 import { useUser } from '../Providers/Socket'
-
+import { FaRegUserCircle } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
 
 const HomePage = () => {
   const user = useUser();
+  const navigate = useNavigate();
   let userlength = false;
   if(user?.user?.timeslots){
     userlength = true;
@@ -17,6 +19,9 @@ const HomePage = () => {
   return (
     <div>
     <p>{user ? <p>{userlength ? "Hey , mentor":"Hello ,user "}</p>: 'Loading...'}</p>
+    {userlength ?  (
+      <FaRegUserCircle onClick={()=>navigate("/update-mentor")}/>
+    ):(null)}
     {!userlength ? (
       <>
         {user && (

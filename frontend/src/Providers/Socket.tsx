@@ -79,18 +79,32 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        let response = await axios.get(`${BACKEND_URL}/app/user`,{withCredentials:true});
-        if(response.data.message=== "No user exists !!"){
-          
-          console.log(response.data)
-        } 
-        else{
-          response = await axios.get(`${BACKEND_URL}/app/mentor`,{withCredentials:true});
-          setUser(response.data.user);
+        const userToken = localStorage.getItem('token');
+        
+        console.log(userToken);// Assuming you store the token in localStorage
+        if (userToken) {
+          // If a token exists, make a request to fetch user data
+          let response = await axios.get(`${BACKEND_URL}/app/user`, { withCredentials: true });
+          if (response.data.message === 'success') {
+            setUser(response.data.user);
+          } else {
+            // If the user data request fails or indicates no user exists, assume the user is a mentor
+            response = await axios.get(`${BACKEND_URL}/app/mentor`, { withCredentials: true });
+            setUser(response.data.user);
+          }
+        } else {
+          // If no token exists, assume the user is not logged in
+          console.log('No user token found. User is not logged in.');
         }
-        console.log(response.data);
       } catch (error) {
-        console.error('Error fetching user:', error);
+        // Handle errors
+        if (error.response) {
+          console.error('Error response from server:', error.response.data);
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+        } else {
+          console.error('Error fetching user:', error);
+        }
       }
     };
 

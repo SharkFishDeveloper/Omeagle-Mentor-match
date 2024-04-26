@@ -70,11 +70,7 @@ export class UserManager{
                 this.bigqueue.splice(person2Index, 1);
             }
         }
-        
-        // const person2 = this.bigqueue.pop();
-        
-        // const user1 = this.bigusers.find(user=>user.socket.id === person1);
-        // const user2 = this.bigusers.find(user=>user.socket.id === person2);
+
         if (!user1 || !findPerson) {
             return;
         }
@@ -109,26 +105,42 @@ export class UserManager{
         const person2 = this.queue.pop();
         const user1 = this.users.find(user=>user.socket.id === person1);
         const user2 = this.users.find(user=>user.socket.id === person2);
-        console.log("ID-1 ",person1," ID-2 ",person2);
+        //console.log("ID-1 ",person1," ID-2 ",person2);
         console.log("creating a room ");
         if (!user1 || !user2) {
             return;
         }
         const room = this.roomManager.createRoom({user1,user2});
-
+        console.log("Conected to Room",room)
+        this.onChatting(user1,user2,room);
     }
+
+
+    onChatting(user1:User,user2:User,room:string){
+        console.log("when sedning messages or receing")
+        user1.socket.join(room);
+        user2.socket.join(room);
+        user1.socket.on("send-message",(text)=>{
+        console.log("Sednign message ",text);
+        user2.socket.emit("receive-message",text);
+    })}
+
+
+
+    
     handleOffer(socket:Socket){
         socket.on("offer",({sdp,roomId}:{sdp:string,roomId:string})=>{
-           console.log("Calling - SDP",sdp);
-            this.roomManager.onOffering(sdp,roomId,socket.id);
+        //    console.log("Calling - SDP",sdp);
+           this.roomManager.onOffering(sdp,roomId,socket.id);
         })
         socket.on("answer",({sdp,roomId}:{sdp:string,roomId:string})=>{
-            console.log("Answering user -> SDP",sdp);
+            //console.log("Answering user -> SDP",sdp);
             this.roomManager.onAnswer(sdp,roomId,socket.id);
         })
         socket.on("add-ice-candidate", ({candidate, roomId, type}) => {
-            console.log("Ice running in backend");          
+            // console.log("Ice running in backend");          
             this.roomManager.onIceCandidates(roomId, socket.id, candidate, type);
         });
+
     }
 }

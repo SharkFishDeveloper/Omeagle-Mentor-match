@@ -44,8 +44,9 @@ io.on('connection', (socket:Socket) => {
     })
     
     // Listen for messages from the client
-    socket.on('clientMessage', (message) => {
-      console.log('Message from client:', message);
+    socket.on('send-message', (message:string) => {
+      // console.log('Message from client:', message);
+      socket.broadcast.emit("receive-message",message);
     });
     
     // Handle disconnection
