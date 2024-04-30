@@ -258,7 +258,7 @@ return (
       <div className="flex items-center border-t border-gray-300">
         <input
           type="text"
-          className="flex-1 p-1 focus:outline-none"
+          className="flex-1 p-2 focus:outline-none"
           placeholder="Type a message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -270,6 +270,16 @@ return (
           Send
         </button>
       </div>
+
+
+
+
+
+
+
+
+
+
     </div>
   </div>
 </div>

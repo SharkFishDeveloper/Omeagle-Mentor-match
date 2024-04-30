@@ -9,7 +9,7 @@ import { useUser } from '../Providers/Socket';
 const Appbar = () => {
     const navigate= useNavigate();
     const {user,setUser} = useUser();
-  // console.log(!user.rating)
+  // console.log(user.rating!==undefined)
 
     const handleLogout =async ()=>{
       try {
@@ -32,7 +32,7 @@ const Appbar = () => {
       <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Flowbite</span>
   </Link>
   <div className="flex md:order-2">
-    {user && !user.rating && (
+    {user && user.rating===undefined && (
       <button onClick={()=>navigate("/search")}><p className="text-white">
       Search mentor</p></button>
     )}
