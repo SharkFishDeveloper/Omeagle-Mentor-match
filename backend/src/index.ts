@@ -25,18 +25,19 @@ const userManager = new UserManager();
 
 // roomManager.joinRoom(user);
 io.on('connection', (socket:Socket) => {
-    console.log('A user connected',socket.id);
+    // console.log('A user connected',socket.id);
 
 
 
     socket.on('joinRoom',({name,university}:{name:string,university?:string})=>{
       console.log("University ",university)
       if(university){
-        
+        console.log("Universty",university)
         userManager.addBigUser(name,socket,university);
       }
       else{
         userManager.addUser(name,socket);
+        console.log("Totally random",name)
       }
     //   const updName = name.toLowerCase();
     //   roomManager.joinRoom(updName,socket);

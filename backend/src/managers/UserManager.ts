@@ -56,13 +56,29 @@ export class UserManager{
         if(this.bigqueue.length < 2){
             return;
         }
+        
+        const person1 = this.bigqueue.pop(); 
+        const user1 = this.bigusers.find(user=>user.socket.id === person1);
+        var findPerson = this.bigusers.find(user => {
+    if (!user1 || !user) {
+        return false; // Consider handling this case based on your logic
+    }
+    return user.socket.id !== user1.socket.id && user.university === user1.university;
+});
+        console.log("read this",user1?.name,findPerson?.name);
+        if(!findPerson || user1?.name === findPerson.name){
+            console.log("I am cancelling")
+            console.log;(user1?.socket.id , findPerson?.socket.id)
+           if(user1?.socket.id){
+            this.bigqueue.push(user1?.socket.id)
+           }
+            return;
+        }
+            console.log(findPerson.name);
+            console.log(user1?.name)
+        const person2Id = findPerson?.socket.id;
+        console.log(person2Id);
 
-        const person1 = this.bigqueue.pop(); //just any random ID
-        const user1 = this.bigusers.find(user=>user.socket.id === person1);//find person1 from that ID
-        const findPerson = this.bigusers.find(user=>user.university === user1?.university && user.socket.id!==user1?.socket.id);
-        if(!findPerson){
-            return;}//find matching university of user2
-        const person2Id = findPerson?.socket.id;//find Id of matched user
         if(person2Id){
             const person2Index = this.bigqueue.indexOf(person2Id);
             if(person2Index){
@@ -78,7 +94,11 @@ export class UserManager{
             const finalUser1:User = {name:user1?.name ,socket:user1?.socket}; 
             const finalUser2:User = {name:findPerson?.name ,socket:findPerson?.socket}; 
             console.log("user1 connecting", finalUser1.name,"user2 connecting",finalUser2.name);
-            
+            if(finalUser1.socket.id===finalUser2.socket.id){
+                console.log("Over here");
+                
+                return;
+            }
             const room = this.roomManager.createRoom({ user1: finalUser1, user2: finalUser2 });
             // console.log("Creating a university room",user1);
         }

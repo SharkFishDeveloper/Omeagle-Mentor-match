@@ -1,2 +1,2 @@
 export  const  BACKEND_URL:string = "http://localhost:3000";
-export const univerOptions = ["Univer A","Univer B","Univer C","Univer D","Univer E","Univer F","Univer G","Univer H","Univer I","Univer J"];
+export const univerOptions = ["Thapar","Harward","MIT","IIT-B","IIT-D","IIT-K","Stanford"];
