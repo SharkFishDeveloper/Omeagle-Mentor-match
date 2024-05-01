@@ -19,6 +19,7 @@ export class RoomManager{
     createRoom(users:Room){
         const id = this.generate().toString();
         //console.log("Id of room ",id);
+        console.log("VIP",users.user1.socket.id,users.user2.socket.id);
         this.rooms.set(id,{user1:users.user1,user2:users.user2});
         //console.log(this.rooms);
         const {user1,user2} = users;
@@ -27,7 +28,7 @@ export class RoomManager{
         const name2 = user2.name;
         user1.socket.emit("connected-to-room",{id,username:name2});
         user2.socket.emit("connected-to-room",{id,username:name1});
-        user2.socket.emit("ask-offer")
+        // user2.socket.emit("ask-offer")
         //console.log("Emiited joingin room from backend");
         user1.socket.join(id);
         user2.socket.join(id);
