@@ -34,13 +34,7 @@ export interface Mentor {
     price: number;
   }
   
-// "id": "5814d73d-e7a7-4211-938b-89b65887d1bc",
-//         "email": "world@w.com",
-//         "password": "$2b$10$n7o9kuCriQE/kWDD8T8hrebmnxOdtzxxzKQho1As5ALxO0q4rOsz6",
-//         "username": "world",
-//         "imageUrl": null,
-//         "roomId": [],
-//         "mentorName": []
+
 export const useSocket = (): Socket | undefined => {
     const socket = useContext(SocketContext);
     if (!socket) {
@@ -59,7 +53,7 @@ export const SocketProvider = (props:any)=>{
         return () => {
             socket.disconnect();
         };
-    }, [socket]); // Ensure to re-establish connection if socket changesu
+    }, [socket]);
     return (
         <SocketContext.Provider value={socket}>
         {props.children}

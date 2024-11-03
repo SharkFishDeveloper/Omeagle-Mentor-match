@@ -30,6 +30,23 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
     const [receivedMessages, setreceivedMessages] = useState([]);
     const [roomId,setRoomId] = useState("");
     const navigate = useNavigate();
+
+    const [allmessages, setAllMessages] = useState<Message[]>([]);
+
+    const [currentMesasge, setCurrentMesasge] = useState<string>([]);
+
+    const MessageType = {
+      SENT: 'SENT',
+      RECEIVED: 'RECEIVED',
+    } as const;
+    
+    // Define the type for messages
+    interface Message {
+      text: string;
+      type: typeof MessageType[keyof typeof MessageType]; // This makes the type union of 'SENT' | 'RECEIVED'
+    }
+
+
     useEffect(()=>{
       socket?.on("connected-to-room",({id,username})=>{
         setuser2name(username);
@@ -171,10 +188,24 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
 
 
   const sendMessage = ()=>{
+    if (currentMesasge.trim() === "") return; // Check for non-empty message
+    setCurrentMesasge("");
     try {
-      socket?.emit("send-message",message);
-      setsendmessages([...sendmessages,message])
-      console.log("send-message",message);
+      socket?.emit("send-message",currentMesasge);
+
+      const newMessage: Message = { text: currentMesasge, type: MessageType.SENT };
+
+      setAllMessages((prevMessages) => {
+        // Check for duplicate received messages
+        if (
+          prevMessages.length > 0 &&
+          prevMessages[prevMessages.length - 1].text === newMessage.text &&
+          prevMessages[prevMessages.length - 1].type === newMessage.type
+        ) {
+          return prevMessages.slice(0, prevMessages.length - 1); // Remove last message if duplicate
+        }
+        return [...prevMessages, newMessage];
+      });
       setMessage("");
     } catch (error) {
       console.log(error);
@@ -184,19 +215,31 @@ const JoinRoom = ({name,localaudiotrack,localvideotrack}:
   }
 
   useEffect(() => {
-    // Listen for incoming messages
-    socket?.on('receive-message', message=> {
-      setreceivedMessages([...receivedMessages, message]);
+    socket?.on('receive-message', currentMesasge=> {
+      const newMessage: Message = { text: currentMesasge, type: MessageType.RECEIVED };
+      setAllMessages((prevMessages) => {
+        // Check if the last message is the same as the new one and of the same type
+        if (
+          prevMessages.length > 0 &&
+          prevMessages[prevMessages.length - 1].text === newMessage.text &&
+          prevMessages[prevMessages.length - 1].type === newMessage.type
+        ) {
+          // Remove the last message if it is a duplicate
+          return prevMessages.slice(0, prevMessages.length - 1);
+        }
+
+        // Otherwise, add the new message
+        return [...prevMessages, newMessage];
+      });
+
       console.log('receive-message', message);
-  });
+      });
 
     return () => {
-        // Disconnect socket when component unmounts
         socket?.off("send-message");
         socket?.off("receive-message");
- 
-    };
-}, [message, receivedMessages, socket]);
+      };
+}, [message, socket]);
 
 
 
@@ -233,8 +276,11 @@ return (
       </div>
 
       {/* Chat Wrapper */}
-      <div className="chat-wrapper bg-gray-100 h-[30%] flex flex-col p-4 rounded-lg shadow-md mt-4"> {/* Adjusted height */}
-        <h3 className="text-lg font-semibold mb-4">Meeting Details</h3>
+      <div className="chat-wrapper bg-gray-100 h-[30%] flex flex-col p-4 rounded-lg shadow-md mt-4"> 
+
+      <h3 className="text-lg font-semibold mb-4">
+        Meeting Details &nbsp; {name.charAt(0).toUpperCase() + name.slice(1)} - You are currently communicating with - {user2name && user2name.charAt(0).toUpperCase() + user2name.slice(1)}
+      </h3>
 
         {/* Chat Header */}
         <div className="chat-header bg-gray-200 py-2 px-4 rounded-t-lg">
@@ -243,32 +289,28 @@ return (
 
         {/* Chat Messages */}
         <div className="chat-messages flex-grow bg-white rounded-b-lg shadow-md overflow-hidden">
-          {user2name ? (
-            <p className="text-sm font-semibold text-center p-2">
-              {name} - You are currently communicating with - {user2name}
-            </p>
-          ) : (
+          {!user2name && (
             <p className="text-center p-2">Finding someone...</p>
           )}
-          <div className="h-32 overflow-y-auto p-2"> {/* Adjusted height for the messages area */}
-            {/* Sent Messages */}
-            {sendmessages.map((msg, index) => (
-              <div key={index} className="flex justify-end mb-2">
-                <div className="bg-blue-500 text-white text-sm p-2 rounded-lg max-w-xs">
-                  {msg}
-                </div>
-              </div>
-            ))}
+          <div className="h-32 overflow-y-auto p-2 flex flex-col-reverse"> 
 
-            {/* Received Messages */}
-            {receivedMessages.map((msg, index) => (
-              <div key={index} className="flex justify-start mb-2">
-                <div className="bg-green-400 text-white text-sm p-2 rounded-lg max-w-xs">
-                  {msg}
+
+          <div className="h-32 overflow-y-auto p-2 flex flex-col">
+
+          <div className="h-80 overflow-y-auto p-4 bg-gray-50 rounded-lg shadow-md flex flex-col-reverse">
+                  {allmessages.reverse().map((msg, index) => (
+                    <div key={index} className={`flex ${msg.type === MessageType.SENT ? 'justify-end' : 'justify-start'} mb-2`}>
+                      <div className={`text-sm p-2 rounded-lg max-w-xs ${msg.type === MessageType.SENT ? 'bg-blue-500 text-white' : 'bg-green-400 text-white'}`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
           </div>
+
+</div>
+
+
 
           {/* Message Input */}
           <div className="flex items-center border-t border-gray-300 mt-2">
@@ -276,13 +318,12 @@ return (
               type="text"
               className="flex-1 p-2 border border-gray-300 rounded-l focus:outline-none"
               placeholder="Type a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) =>{setCurrentMesasge(e.target.value)}}
+              value={currentMesasge}
             />
             <button
               className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600 transition-colors duration-300 focus:outline-none"
-              onClick={sendMessage}
-            >
+              onClick={sendMessage}>
               Send
             </button>
           </div>

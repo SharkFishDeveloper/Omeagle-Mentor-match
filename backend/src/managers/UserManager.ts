@@ -80,7 +80,8 @@ export class UserManager{
     
 
         this.bigusers.splice(user1Index, 1);//remove old user 
-        this.bigusers.splice(Number(findPerson.socket.id), 1);//remove old user 
+        this.bigusers.splice(Number(findPerson.socket.id), 1);//remove new user 
+        this.bigqueue = this.bigqueue.filter(id => id !== user1.socket.id); // Remove latest user from bigqueue
         this.bigqueue = this.bigqueue.filter(id => id !== findPerson.socket.id); // Remove latest user from bigqueue
     
         // Ensure both users are valid

@@ -83,21 +83,30 @@ mentorRouter.post("/signup",async(req,res)=>{
 mentorRouter.post("/search",authMiddleware,async(req,res)=>{
     try {
         const {username:searchname,selectedTags:specializations,university}:{username:string|undefined,selectedTags:string[]|undefined,university:string|undefined}= req.body;
-        console.log("search",searchname)
-        // return res.json({searchname,specializations,university});
-        if (!searchname && !specializations?.length && !university) {
+
+            if(!searchname && !specializations?.length && !university) {
             return res.status(303).json({ message: "No search criteria provided!" });
-          }
-        const users = await prisma.mentor.findMany({
-        where:{
-           username :searchname ?  {contains : searchname as string }:undefined,
-           specializations :specializations? {hasEvery : specializations}:undefined,
-           university :university ? { contains: university } : undefined
-        }
-    })
-    //username:{contains:searchname as string}
-    // console.log("found users",filter);
-    
+            }
+         
+            console.log("USERNAME",searchname,specializations,university)  
+            const whereConditions: any = {};
+
+            if(searchname) {
+                whereConditions.username = { contains:searchname, mode: 'insensitive',};
+            }
+            if (specializations && specializations.length > 0) {
+                whereConditions.specializations = { hasEvery: specializations };
+            }
+            if (university) {
+                whereConditions.university = { contains: university, mode: 'insensitive', };
+            }
+
+          const users = await prisma.mentor.findMany({
+            where: whereConditions,
+            take: 10, // Limit the results to the best matching 10 mentors
+        });
+
+        console.log("mentor users",)
     return res.json({message:`success`,users:users})
     } catch (error) {
         console.log("errro in fiding user",error)
@@ -145,10 +154,13 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
     if (username) mentorDataToUpdate.username = username;
     if (imageUrl) mentorDataToUpdate.imageUrl = imageUrl;
     if (university) mentorDataToUpdate.university = university;
-    if (specializations) mentorDataToUpdate.specializations = specializations;
+    if (specializations) {
+        mentorDataToUpdate.specializations = specializations.map(specialization => specialization.trim()).filter(specialization => specialization.length > 0);
+    }
+
     if (specializations) mentorDataToUpdate.price = price;
+
     if(timeslots){
-        // return res.json({message:"No time slots"});
         timeslots.sort((a, b) => a - b);
         for (let i = 0; i < timeslots.length; i++) {
             if(timeslots[i] - timeslots[i-1] <=1 ){
@@ -157,8 +169,8 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
         }
         mentorDataToUpdate.timeslots = timeslots;
     };
-    
-    const userId = req.user.id;
+    console.log("UPDATE DATA",mentorDataToUpdate)
+    const userId = req.user;
     const userUpdated = await prisma.mentor.update({
         where:{
             id:userId 

@@ -56,7 +56,7 @@ function LandingPage() {
 
   return (
     <div className="flex flex-col items-center justify-center h-[80%]">
-      <h1 className="text-3xl font-bold mb-8">Landing page</h1>
+      <h1 className="text-3xl font-bold mb-8 mt-5">Landing page</h1>
       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => router('/home')}>
         Mentor-match
       </button>

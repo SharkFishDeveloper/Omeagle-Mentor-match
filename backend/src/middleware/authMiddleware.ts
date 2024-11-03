@@ -19,14 +19,14 @@ const authMiddleware = async(req:CustomRequest,res:Response,next:NextFunction)=>
     }
     const userID = jwt.verify(token,JWT_SECRET_KEY);
     
-    const user  = await prisma.user.findFirst({
-        where:{
-            id:userID as string
-        }
-    })
-    req.user = user;
-    console.log("User",user);
-    console.log("Authmiddelware cookie",token);
+    // const user  = await prisma.user.findFirst({
+    //     where:{
+    //         id:userID as string
+    //     }
+    // })
+    req.user = userID;
+    // console.log("User",userID);
+    // console.log("Authmiddelware cookie",token);
     next();
     } catch (error) {
         console.log("in middlw",error)
@@ -44,13 +44,14 @@ const authMentorMiddleware = async(req:CustomRequest,res:Response,next:NextFunct
     }
     const userID = jwt.verify(token,JWT_SECRET_KEY);
     
-    const user  = await prisma.mentor.findFirst({
-        where:{
-            id:userID as string
-        }
-    })
-    req.user = user;
-    console.log("Mentor",user);
+    // const user  = await prisma.mentor.findFirst({
+    //     where:{
+    //         id:userID as string
+    //     }
+    // })
+    console.log("USERID",userID)
+    req.user = userID;
+    console.log("Mentor",userID);
     console.log("Authmiddelware cookie",token);
     next();
     } catch (error) {
