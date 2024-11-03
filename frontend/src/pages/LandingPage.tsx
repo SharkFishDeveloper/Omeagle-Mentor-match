@@ -1,85 +1,117 @@
-import { useState,useEffect, useRef } from 'react'
-import {BACKEND_URL,univerOptions} from "../../utils/backendUrl.js"
-import { useSocket } from '../Providers/Socket.js';
-import {useNavigate} from "react-router-dom"
+import { useState, useEffect, useRef } from 'react';
+import { BACKEND_URL, univerOptions } from '../../utils/backendUrl.js';
+import { useSocket, useUser } from '../Providers/Socket.js';
+import { useNavigate } from 'react-router-dom';
 import JoinRoom from './JoinRoom';
 
-
 function LandingPage() {
-    const router  = useNavigate();
-    const [name,setName]  = useState("");
-    const [school,setSchool]  = useState("");
-    const [choice,setChoice] = useState(true);
-    const [selectedOption, setSelectedOption] = useState("");
-    const socket = useSocket();
-    const [localaudiotrack,setlocalaudiotrack] = useState<MediaStreamTrack|null>()
-    const [localvideotrack,setlocalvideotrack] = useState<MediaStreamTrack|null>()
-    const [joined,setJoined] = useState(false);
-    const [open,setOpen] = useState(false);
-    const videoRef = useRef<HTMLVideoElement>(null);
+  const user = useUser();
+  const router = useNavigate();
+  const [name, setName] = useState(user ? user?.user?.username : '');
+  const roomId = user?.user?.roomId.length;
+  const [school, setSchool] = useState('');
+  const [choice, setChoice] = useState(true);
+  const [selectedOption, setSelectedOption] = useState('');
+  const socket = useSocket();
+  const [localaudiotrack, setLocalAudioTrack] = useState<MediaStreamTrack | null>(null);
+  const [localvideotrack, setLocalVideoTrack] = useState<MediaStreamTrack | null>(null);
+  const [joined, setJoined] = useState(false);
+  const [open, setOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [roomIdConnect, setRoomIdConnect] = useState('');
 
   async function GetMedia() {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio:true,
-      video:true
-    })
-    setlocalaudiotrack(stream.getAudioTracks()[0]);
-    setlocalvideotrack(stream.getVideoTracks()[0]);
+      audio: true,
+      video: true,
+    });
+    setLocalAudioTrack(stream.getAudioTracks()[0]);
+    setLocalVideoTrack(stream.getVideoTracks()[0]);
     if (videoRef.current) {
-      videoRef.current.srcObject = stream; // Set the srcObject of the video element
+      videoRef.current.srcObject = stream;
     }
   }
-  useEffect(()=>{
+  useEffect(() => {
     if (videoRef && videoRef.current) {
-      if(joined){
-        GetMedia()
+      if (joined) {
+        GetMedia();
       }
-  }
-  },[joined])
+    }
+  }, [joined]);
 
-    const handleJoinRoom = ()=>{
-      if(selectedOption!=""){
-        socket!.emit("joinRoom",{name,university:selectedOption});
-      }
-      else socket!.emit("joinRoom",{name});
-     if(localaudiotrack && localvideotrack){
-      // router(`/room`,{state:{name,localaudiotrack,localvideotrack}});
+  const handleJoinRoom = () => {
+    let universityToSend = selectedOption;
+    if (roomIdConnect) {
+      universityToSend = roomIdConnect;
+    }
+    socket!.emit('joinRoom', { name, university: universityToSend });
+    if (localaudiotrack && localvideotrack) {
       setOpen(!open);
-     }
     }
+  };
 
-    if(open){
-      return <JoinRoom name={name} localaudiotrack={localaudiotrack} localvideotrack={localvideotrack}/>
-    }
+  if (open) {
+    return <JoinRoom name={name} localaudiotrack={localaudiotrack} localvideotrack={localvideotrack} />;
+  }
 
   return (
-    <div>
-     <h1>Landing page</h1>
-     <p>Connect with anyone</p>
-     <div>
-      <p>Enter name</p>
-      <input type="text" placeholder='Your name' onChange={(e)=>setName(e.target.value)}/>
-      { !choice && (
-        <div>
-          <p>Enter choice</p>
-        {univerOptions.map((options,index)=>(
-          <div key={index} onClick={()=>setSelectedOption(options)}>{options}</div>
-        ))}
-        </div>
-      )}
-      {!choice && (
-        <button onClick={()=>setSelectedOption("")}>Clear option </button>
-      )}
-      {!joined ? (<p onClick={()=>setJoined(!joined)}>start</p>):(<>
-      <button onClick={handleJoinRoom}>Connect :))</button></>)}
-      <br />
-      <button onClick={()=>setChoice(!choice)}>{choice ? "Or enter selectively":"Change choice"}</button>
-     </div>
-     <p>{selectedOption}</p>
-     <video ref={videoRef} autoPlay muted playsInline style={{ maxWidth: '100%', maxHeight: '100%' }} />
+    <div className="flex flex-col items-center justify-center h-[80%]">
+      <h1 className="text-3xl font-bold mb-8">Landing page</h1>
+      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => router('/home')}>
+        Mentor-match
+      </button>
+      <p className="mt-4 mb-2">Connect with anyone</p>
+      <div className="flex flex-col items-center">
+        <p>Enter name</p>
+        <input
+          type="text"
+          placeholder={name}
+          className="border border-gray-300 rounded px-2 py-1 mt-2 mb-4 focus:outline-none"
+          onChange={(e) => setName(e.target.value)}
+        />
+        {!choice && (
+          <div className="flex flex-wrap justify-between w-full max-w-md">
+            {univerOptions.map((options, index) => (
+              <div key={index} onClick={() => setSelectedOption(options)} className="cursor-pointer hover:bg-gray-100 rounded px-2 py-1 mt-2">
+                {options}
+              </div>
+            ))}
+          </div>
+        )}
+        {!choice && (
+          <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mt-4" onClick={() => setSelectedOption('')}>
+            Clear option
+          </button>
+        )}
+        {!joined ? (
+          <p onClick={() => setJoined(!joined)} className="cursor-pointer bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
+            Start
+          </p>
+        ) : (
+          <>
+            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4" onClick={handleJoinRoom}>
+              Connect :))
+            </button>
+          </>
+        )}
+        <br />
+        <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mt-4" onClick={() => setChoice(!choice)}>
+          {choice ? 'Or enter selectively' : 'Change choice'}
+        </button>
+      </div>
+      {roomId > 0 ? (
+        <input
+          type="text"
+          placeholder="Enter roomId"
+          className="border border-gray-300 rounded px-2 py-1 mt-4 focus:outline-none"
+          onChange={(e) => setRoomIdConnect(e.target.value)}
+        />
+      ) : null}
+      <p className="mt-4">{selectedOption}</p>
+      <video ref={videoRef} autoPlay muted playsInline className="max-w-full max-h-full mt-4" />
+     
     </div>
   );
-
 }
 
 export default LandingPage;
