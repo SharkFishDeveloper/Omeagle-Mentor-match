@@ -23,25 +23,19 @@ const io = new Server(server,{
 });
 const userManager = new UserManager();
 
-// roomManager.joinRoom(user);
 io.on('connection', (socket:Socket) => {
-    // console.log('A user connected',socket.id);
-
-
-
     socket.on('joinRoom',({name,university}:{name:string,university?:string})=>{
       console.log("University ",university)
-      if(university){
+      if(university!==undefined && university!==null){
         console.log("Universty",university)
+        //! main CRUX
         userManager.addBigUser(name,socket,university);
       }
       else{
+        //! main CRUX
         userManager.addUser(name,socket);
         console.log("Totally random",name)
       }
-    //   const updName = name.toLowerCase();
-    //   roomManager.joinRoom(updName,socket);
-    //  console.log(roomManager.getUsers())
     })
     
     // Listen for messages from the client
@@ -52,7 +46,14 @@ io.on('connection', (socket:Socket) => {
     
     // Handle disconnection
     socket.on('disconnect', () => {
-      console.log('User disconnected');
+    const { userType } = userManager.removeUser(socket.id);
+    if (userType === 'bigUser') {
+      console.log(`User with university disconnected: ${socket.id}`);
+    } else if (userType === 'normalUser') {
+      console.log(`Regular user disconnected: ${socket.id}`);
+    } else {
+      console.log(`Unknown user disconnected: ${socket.id}`);
+    }
     });
   });
 
@@ -60,6 +61,9 @@ io.on('connection', (socket:Socket) => {
 app.use("/app/user",userRouter);
 app.use("/app/mentor",mentorRouter);
 
+app.get("/data",(req,res)=>{
+  return  res.json({"All data of map":userManager.returnMapData()})
+})
 
 server.listen(3000,()=>{
     console.log("Server running 3000")

@@ -9,8 +9,10 @@ export interface User {
 export interface UniversUser{
     socket:Socket,
     name:string,
-    university?:string
+    //TODO: Check is university should be null
+    university:string
 }
+
 
 export class UserManager{
     private users:User[];
@@ -40,7 +42,7 @@ export class UserManager{
         this.handleOffer(socket);
     }
 
-    addBigUser(name:string,socket:Socket,university?:string){
+    addBigUser(name:string,socket:Socket,university:string){
         const findSID = this.queue.find(id=>id === socket.id);
         if(findSID){
             console.log("User already exists ")
@@ -64,6 +66,7 @@ export class UserManager{
             return; // Person not found in bigusers
         }
         const user1 =  this.bigusers[userA];
+        console.log("BIG USER",user1)
         
         const findPerson = this.bigusers.find(user => {
             if (!user1 ) {
@@ -77,9 +80,6 @@ export class UserManager{
         if (!findPerson || user1?.socket.id === findPerson.socket.id ||user1?.name=== findPerson.name) {
             console.log("I am cancelling");
             console.log(user1?.socket.id, findPerson?.socket.id);
-            // if (user1?.socket.id) {
-            //     this.bigqueue.push(user1?.socket.id);
-            // }
             return;
         }
        
@@ -122,8 +122,6 @@ export class UserManager{
         const person2 = this.queue.pop();
         const user1 = this.users.find(user=>user.socket.id === person1);
         const user2 = this.users.find(user=>user.socket.id === person2);
-        //console.log("ID-1 ",person1," ID-2 ",person2);
-        console.log("creating a room ");
         if (!user1 || !user2) {
             return;
         }
@@ -138,7 +136,7 @@ export class UserManager{
         user1.socket.join(room);
         user2.socket.join(room);
         user1.socket.on("send-message",(text)=>{
-        console.log("Sednign message ",text);
+        console.log("Sendign message ",text);
         user2.socket.emit("receive-message",text);
     })}
 
@@ -160,4 +158,33 @@ export class UserManager{
         });
 
     }
+
+    removeUser(socketId: string): { userType: 'bigUser' | 'normalUser' | null } {
+        const bigUserIndex = this.bigusers.findIndex(user => user.socket.id === socketId);
+        if (bigUserIndex !== -1) {
+          this.bigusers.splice(bigUserIndex, 1);
+          this.bigqueue = this.bigqueue.filter(id => id !== socketId);
+          return { userType: 'bigUser' };
+        }
+        
+        const userIndex = this.users.findIndex(user => user.socket.id === socketId);
+        if (userIndex !== -1) {
+          this.users.splice(userIndex, 1);
+          this.queue = this.queue.filter(id => id !== socketId);
+          return { userType: 'normalUser' };
+        }
+    
+        return { userType: null };
+      }
+
+    returnMapData() {
+        return {
+            universityStudents: this.bigusers.map(({ socket, ...rest }) => rest),
+            universityStudentsId: this.bigqueue,
+            normalUsers: this.users.map(({ socket, ...rest }) => rest),
+            normalUsersId: this.queue
+        };
+    }
+    
+
 }
