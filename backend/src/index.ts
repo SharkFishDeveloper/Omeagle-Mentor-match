@@ -26,7 +26,7 @@ const userManager = new UserManager();
 io.on('connection', (socket:Socket) => {
     socket.on('joinRoom',({name,university}:{name:string,university?:string})=>{
       console.log("University ",university)
-      if(university!==undefined && university!==null){
+      if (university && university.trim() !== "") {
         console.log("Universty",university)
         //! main CRUX
         userManager.addBigUser(name,socket,university);

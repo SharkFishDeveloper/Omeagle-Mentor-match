@@ -38,8 +38,6 @@ export class RoomManager{
     onOffering(sdp:string,roomID:string,socket:string){
         const room = this.rooms.get(roomID);
         const recievingUser = room?.user1.socket.id === socket ? room?.user2.socket : room?.user1.socket; 
-        // console.log("user1 -<",socket," user2-<",recievingUser?.id);
-        // console.log(sdp);
         recievingUser?.emit("offer",{sdp});
     }
 

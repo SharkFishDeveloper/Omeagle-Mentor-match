@@ -9,7 +9,6 @@ export interface User {
 export interface UniversUser{
     socket:Socket,
     name:string,
-    //TODO: Check is university should be null
     university:string
 }
 
@@ -56,60 +55,45 @@ export class UserManager{
 
     clearBigUser() {
         if (this.bigqueue.length < 2) {
-            return;
+            return; // Not enough users to connect
         }
     
-        //const person1Index = this.bigqueue.length - 1;
-        const person1 = this.bigqueue.pop();
-        const userA =  this.bigusers.findIndex(user => user.socket.id === person1);
-        if (userA === -1) {
+        // const person1Id = this.bigqueue.pop(); 
+        const person1Id = this.bigqueue[this.bigqueue.length - 1];
+        const user1Index = this.bigusers.findIndex(user => user.socket.id === person1Id);
+    
+        if (user1Index === -1) {
             return; // Person not found in bigusers
         }
-        const user1 =  this.bigusers[userA];
-        console.log("BIG USER",user1)
-        
-        const findPerson = this.bigusers.find(user => {
-            if (!user1 ) {
-                return false;
-            }
-            return (user.name !== user1.name &&user.socket.id !== user1.socket.id && user.university === user1.university);
-        });
     
-        console.log("Read this", user1?.name, findPerson?.name);
+        const user1 = this.bigusers[user1Index];
     
-        if (!findPerson || user1?.socket.id === findPerson.socket.id ||user1?.name=== findPerson.name) {
-            console.log("I am cancelling");
-            console.log(user1?.socket.id, findPerson?.socket.id);
-            return;
+        // Find a second user with the same university
+        const findPerson = this.bigusers.find(user => 
+            user.socket.id !== user1.socket.id && user.university === user1.university
+        );
+    
+        if (!findPerson) {
+            console.log("No matching user found or self-match.");
+            return; // No matching user found
         }
-       
     
-        const person2Id = findPerson?.socket.id;
-        console.log(person2Id);
 
-        if (person2Id) {
-            const person2Index = this.bigqueue.indexOf(person2Id);
-            if (person2Index >= 0) {
-                this.bigqueue.splice(person2Index, 1);
-            }
-            this.bigusers.splice(userA,1);
-        }
+        this.bigusers.splice(user1Index, 1);//remove old user 
+        this.bigusers.splice(Number(findPerson.socket.id), 1);//remove old user 
+        this.bigqueue = this.bigqueue.filter(id => id !== findPerson.socket.id); // Remove latest user from bigqueue
     
-        if (!user1 || !findPerson) {
-            return;
-        }
-        if (user1?.socket && findPerson?.socket) {
+        // Ensure both users are valid
+        if (user1 && findPerson) {
             const finalUser1: User = { name: user1.name, socket: user1.socket };
             const finalUser2: User = { name: findPerson.name, socket: findPerson.socket };
-            console.log("user1 connecting", finalUser1.name, "user2 connecting", finalUser2.name);
-            const room = this.roomManager.createRoom({ user1: finalUser2, user2: finalUser1 });
-            this.onChatting(user1, findPerson,room);
+    
+            console.log("not normal users connecting:", finalUser1.name, "user2 connecting:", finalUser2.name);
+            const room = this.roomManager.createRoom({ user1: finalUser1, user2: finalUser2 });
+            this.onChatting(finalUser1, finalUser2, room); // Start chatting
         }
     }
     
-
-
-
 
 
 
@@ -120,14 +104,26 @@ export class UserManager{
         }
         const person1 = this.queue.pop();
         const person2 = this.queue.pop();
-        const user1 = this.users.find(user=>user.socket.id === person1);
-        const user2 = this.users.find(user=>user.socket.id === person2);
-        if (!user1 || !user2) {
+        // Find the corresponding users in the users array
+        const user1Index = this.users.findIndex(user => user.socket.id === person1);
+        const user2Index = this.users.findIndex(user => user.socket.id === person2);
+
+        // Ensure both users exist before proceeding
+        if (user1Index === -1 || user2Index === -1) {
             return;
         }
-        const room = this.roomManager.createRoom({user1,user2});
-        console.log("Conected to Room",room)
-        this.onChatting(user1,user2,room);
+
+        const user1 = this.users[user1Index];
+        const user2 = this.users[user2Index];
+
+        // Remove user1 and user2 from the users array
+        this.users.splice(user1Index, 1);
+        this.users.splice(user2Index, 1);
+
+        // Create a room for the users and start their chat
+        const room = this.roomManager.createRoom({ user1, user2 });
+        console.log("Connected to Room", room);
+        this.onChatting(user1, user2, room);
     }
 
 
@@ -135,10 +131,12 @@ export class UserManager{
         console.log("when sedning messages or receing")
         user1.socket.join(room);
         user2.socket.join(room);
+
         user1.socket.on("send-message",(text)=>{
         console.log("Sendign message ",text);
         user2.socket.emit("receive-message",text);
-    })}
+        })
+    }
 
 
 
