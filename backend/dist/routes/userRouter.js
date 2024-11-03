@@ -40,7 +40,7 @@ userRouter.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, functi
         }
         else {
             const token = yield jsonwebtoken_1.default.sign(user.id, utils_1.JWT_SECRET_KEY);
-            res.cookie('token', token, { httpOnly: true, secure: true, sameSite: true, maxAge: 3600000 });
+            res.cookie('token', token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 3600000 });
             return res.json({ message: "Logged in successfully !!", user: user });
         }
     }
@@ -67,8 +67,8 @@ userRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
         const user = yield db_1.default.user.create({
             data: { username, password: cryptedPassword, email },
         });
-        const token = yield jsonwebtoken_1.default.sign(user.id, utils_1.JWT_SECRET_KEY);
-        res.cookie('token', token, { httpOnly: true, secure: true, sameSite: true, maxAge: 3600000 });
+        const token = jsonwebtoken_1.default.sign(user.id, utils_1.JWT_SECRET_KEY);
+        res.cookie('token', token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 3600000 });
         return res.json({ message: "Success, signup", user: user });
     }
     catch (error) {
@@ -83,7 +83,11 @@ userRouter.get("/signout", (req, res) => {
     const token = req.cookies.token;
     console.log("token backd", token);
     if (token) {
-        res.clearCookie("token");
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        });
         return res.json({ message: "Success" });
     }
     else {

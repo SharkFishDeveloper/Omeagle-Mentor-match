@@ -24,14 +24,14 @@ const authMiddleware = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
             return res.json({ message: "Please sign in !!" });
         }
         const userID = jsonwebtoken_1.default.verify(token, utils_1.JWT_SECRET_KEY);
-        const user = yield db_1.default.user.findFirst({
-            where: {
-                id: userID
-            }
-        });
-        req.user = user;
-        console.log("User", user);
-        console.log("Authmiddelware cookie", token);
+        // const user  = await prisma.user.findFirst({
+        //     where:{
+        //         id:userID as string
+        //     }
+        // })
+        req.user = userID;
+        // console.log("User",userID);
+        // console.log("Authmiddelware cookie",token);
         next();
     }
     catch (error) {
@@ -47,13 +47,14 @@ const authMentorMiddleware = (req, res, next) => __awaiter(void 0, void 0, void 
             return res.json({ message: "Please sign in !!" });
         }
         const userID = jsonwebtoken_1.default.verify(token, utils_1.JWT_SECRET_KEY);
-        const user = yield db_1.default.mentor.findFirst({
-            where: {
-                id: userID
-            }
-        });
-        req.user = user;
-        console.log("Mentor", user);
+        // const user  = await prisma.mentor.findFirst({
+        //     where:{
+        //         id:userID as string
+        //     }
+        // })
+        console.log("USERID", userID);
+        req.user = userID;
+        console.log("Mentor", userID);
         console.log("Authmiddelware cookie", token);
         next();
     }

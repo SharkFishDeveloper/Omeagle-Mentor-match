@@ -42,7 +42,7 @@ mentorRouter.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, func
         }
         else {
             const token = yield jsonwebtoken_1.default.sign(user.id, utils_1.JWT_SECRET_KEY);
-            res.cookie('token', token, { httpOnly: true, secure: true, sameSite: true, maxAge: 3600000 });
+            res.cookie('token', token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 3600000 });
             return res.json({ message: "Logged in successfully !!", user: user });
         }
     }
@@ -70,7 +70,7 @@ mentorRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, fun
             data: { username, password: cryptedPassword, email },
         });
         const token = yield jsonwebtoken_1.default.sign(user.id, utils_1.JWT_SECRET_KEY);
-        res.cookie('token', token, { httpOnly: true, secure: true, sameSite: true, maxAge: 3600000 });
+        res.cookie('token', token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 3600000 });
         return res.json({ message: "Success, signup", user: user });
     }
     catch (error) {
@@ -84,20 +84,25 @@ mentorRouter.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, fun
 mentorRouter.post("/search", authMiddleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username: searchname, selectedTags: specializations, university } = req.body;
-        console.log("search", searchname);
-        // return res.json({searchname,specializations,university});
         if (!searchname && !(specializations === null || specializations === void 0 ? void 0 : specializations.length) && !university) {
             return res.status(303).json({ message: "No search criteria provided!" });
         }
+        console.log("USERNAME", searchname, specializations, university);
+        const whereConditions = {};
+        if (searchname) {
+            whereConditions.username = { contains: searchname, mode: 'insensitive', };
+        }
+        if (specializations && specializations.length > 0) {
+            whereConditions.specializations = { hasEvery: specializations };
+        }
+        if (university) {
+            whereConditions.university = { contains: university, mode: 'insensitive', };
+        }
         const users = yield db_1.default.mentor.findMany({
-            where: {
-                username: searchname ? { contains: searchname } : undefined,
-                specializations: specializations ? { hasEvery: specializations } : undefined,
-                university: university ? { contains: university } : undefined
-            }
+            where: whereConditions,
+            take: 10, // Limit the results to the best matching 10 mentors
         });
-        //username:{contains:searchname as string}
-        // console.log("found users",filter);
+        console.log("mentor users");
         return res.json({ message: `success`, users: users });
     }
     catch (error) {
@@ -139,12 +144,12 @@ mentorRouter.put("/update", authMiddleware_1.authMentorMiddleware, (req, res) =>
             mentorDataToUpdate.imageUrl = imageUrl;
         if (university)
             mentorDataToUpdate.university = university;
-        if (specializations)
-            mentorDataToUpdate.specializations = specializations;
+        if (specializations) {
+            mentorDataToUpdate.specializations = specializations.map(specialization => specialization.trim()).filter(specialization => specialization.length > 0);
+        }
         if (specializations)
             mentorDataToUpdate.price = price;
         if (timeslots) {
-            // return res.json({message:"No time slots"});
             timeslots.sort((a, b) => a - b);
             for (let i = 0; i < timeslots.length; i++) {
                 if (timeslots[i] - timeslots[i - 1] <= 1) {
@@ -154,7 +159,8 @@ mentorRouter.put("/update", authMiddleware_1.authMentorMiddleware, (req, res) =>
             mentorDataToUpdate.timeslots = timeslots;
         }
         ;
-        const userId = req.user.id;
+        console.log("UPDATE DATA", mentorDataToUpdate);
+        const userId = req.user;
         const userUpdated = yield db_1.default.mentor.update({
             where: {
                 id: userId

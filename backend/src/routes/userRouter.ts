@@ -33,9 +33,8 @@ userRouter.post("/login",async(req,res)=>{
         return res.json({message:"Invalid password"})
     }else{
         const token = await jwt.sign(user.id,JWT_SECRET_KEY);
-        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:true,maxAge:3600000})
+        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:"none",maxAge:3600000})
         return res.json({message:"Logged in successfully !!",user:user})
-
     }
     } catch (error) {
      console.log(error);   
@@ -61,8 +60,8 @@ userRouter.post("/signup",async(req,res)=>{
         const user = await prisma.user.create({
             data:{username,password:cryptedPassword,email},
         })
-        const token = await jwt.sign(user.id,JWT_SECRET_KEY);
-        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:true,maxAge:3600000})
+        const token =  jwt.sign(user.id,JWT_SECRET_KEY);
+        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:"none",maxAge:3600000})
         return res.json({message:"Success, signup",user:user})
     } catch (error) {
         console.log("error in db",error);
@@ -77,7 +76,11 @@ userRouter.get("/signout",(req,res)=>{
     const token = req.cookies.token;
     console.log("token backd",token)
     if(token){
-        res.clearCookie("token");
+        res.clearCookie("token",{
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        });
         return res.json({message:"Success"});
     }else{
         return res.status(400).json({message:"Already signout out !!"});
