@@ -7,6 +7,7 @@ const UpdateMentor = () => {
     const [price, setPrice] = useState<number>(0);
     const [username, setUsername] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [about, setAbout] = useState('');
     const [university, setUniversity] = useState('');
     const [specializations, setSpecializations] = useState<string[]|null>([]);
     const [timeslots, setTimeslots] = useState<number[]|null>([]);
@@ -14,8 +15,7 @@ const UpdateMentor = () => {
 
     const handleUpdate = async () => {
         try {
-            const resp = await axios.put(`${BACKEND_URL}/app/mentor/update`, { price, username, imageUrl, university, specializations, timeslots }, { withCredentials: true });
-            console.log(resp.data.message);
+            const resp = await axios.put(`${BACKEND_URL}/app/mentor/update`, { price, username, imageUrl, university, specializations, timeslots,about }, { withCredentials: true });
             setUser(resp.data.user);
             alert(resp.data.message);
         } catch (error) {
@@ -59,6 +59,14 @@ const UpdateMentor = () => {
                         className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm mt-2"
                         placeholder="University"
                     />
+                    <input
+                        type="text"
+                        value={about}
+                        onChange={(e) => setAbout(e.target.value)}
+                        className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm mt-2"
+                        placeholder="About"
+                    />
+                    
                     <input
                         type="text"
                         onChange={(e) => setSpecializations(e.target.value.split(','))}
