@@ -39,7 +39,7 @@ mentorRouter.post("/login",async(req,res)=>{
         return res.json({message:"Invalid password"})
     }else{
         const token = await jwt.sign(user.id,JWT_SECRET_KEY);
-        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:true,maxAge:3600000})
+        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:"none",maxAge:3600000})
         return res.json({message:"Logged in successfully !!",user:user})
 
     }
@@ -68,7 +68,7 @@ mentorRouter.post("/signup",async(req,res)=>{
             data:{username,password:cryptedPassword,email},
         })
         const token = await jwt.sign(user.id,JWT_SECRET_KEY);
-        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:true,maxAge:3600000})
+        res.cookie('token',token,{httpOnly:true,secure:true,sameSite:"none",maxAge:3600000})
         return res.json({message:"Success, signup",user:user})
     } catch (error) {
         console.log("error in db",error);
@@ -80,97 +80,35 @@ mentorRouter.post("/signup",async(req,res)=>{
 })
 
 
-mentorRouter.post("/search", authMiddleware, async (req, res) => {
-  try {
-    const {
-      username: searchname,
-      selectedTags,
-      university
-    }: {
-      username?: string;
-      selectedTags?: string[];
-      university?: string;
-    } = req.body;
 
-    if (!searchname && !selectedTags?.length && !university) {
-      return res.status(400).json({
-        message: "No search criteria provided!"
-      });
-    }
-
-    const users = await prisma.mentor.findMany({
-      where: {
-        username: searchname
-          ? {
-              contains: searchname,
-              mode: "insensitive"
-            }
-          : undefined,
-
-        specializations:
-          selectedTags && selectedTags.length > 0
-            ? {
-                hasEvery: selectedTags
-              }
-            : undefined,
-
-        university: university
-          ? {
-              contains: university,
-              mode: "insensitive"
-            }
-          : undefined
-      },
-
-      include: {
-        reviews: {
-        include: {
-            user: {
-            select: {
-                id: true,
-                username: true,
-                imageUrl: true
-            }
-            }
-        }
-        }
-  }
-    });
-    console.log(users)
-    return res.json({
-      message: "success",
-      users
-    });
-  } catch (error) {
-    console.log("error in finding mentor", error);
-
-    return res.status(500).json({
-      message: "Internal server error"
-    });
-  }
-});
-
-mentorRouter.get(
-  "/meetings",
-  authMentorMiddleware,
-  async (req: CustomRequest, res) => {
-
+mentorRouter.post("/search",authMiddleware,async(req,res)=>{
     try {
+        const {username:searchname,selectedTags:specializations,university}:{username:string|undefined,selectedTags:string[]|undefined,university:string|undefined}= req.body;
 
-      const meetings = await prisma.meeting.findMany({
-        where: {
-          mentorId: req.user.id,
-        },
+            if(!searchname && !specializations?.length && !university) {
+            return res.status(303).json({ message: "No search criteria provided!" });
+            }
+         
+            console.log("USERNAME",searchname,specializations,university)  
+            const whereConditions: any = {};
 
-        orderBy: {
-          scheduledAt: "desc",
-        },
-      });
+            if(searchname) {
+                whereConditions.username = { contains:searchname, mode: 'insensitive',};
+            }
+            if (specializations && specializations.length > 0) {
+                whereConditions.specializations = { hasEvery: specializations };
+            }
+            if (university) {
+                whereConditions.university = { contains: university, mode: 'insensitive', };
+            }
 
-      return res.json({
-        meetings,
-      });
+          const users = await prisma.mentor.findMany({
+            where: whereConditions,
+            take: 10, // Limit the results to the best matching 10 mentors
+        });
 
+        console.log("mentor users",)
+    return res.json({message:`success`,users:users})
     } catch (error) {
 
       console.log(error);
@@ -223,12 +161,13 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
     if (username) mentorDataToUpdate.username = username;
     if (imageUrl) mentorDataToUpdate.imageUrl = imageUrl;
     if (university) mentorDataToUpdate.university = university;
-    if (about) mentorDataToUpdate.about = about;
-    if (specializations) mentorDataToUpdate.specializations = specializations;
+    if (specializations) {
+        mentorDataToUpdate.specializations = specializations.map(specialization => specialization.trim()).filter(specialization => specialization.length > 0);
+    }
+
     if (specializations) mentorDataToUpdate.price = price;
-    if (specializations) mentorDataToUpdate.price = price;
+
     if(timeslots){
-        // return res.json({message:"No time slots"});
         timeslots.sort((a, b) => a - b);
         for (let i = 0; i < timeslots.length; i++) {
             if(timeslots[i] - timeslots[i-1] <=1 ){
@@ -237,7 +176,8 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
         }
         mentorDataToUpdate.timeslots = timeslots;
     };
-    const userId = req.user.id;
+    console.log("UPDATE DATA",mentorDataToUpdate)
+    const userId = req.user;
     const userUpdated = await prisma.mentor.update({
         where:{
             id:userId 
