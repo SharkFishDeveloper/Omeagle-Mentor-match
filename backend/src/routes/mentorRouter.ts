@@ -13,7 +13,8 @@ interface UpdateMentor {
     university?:string,
     specializations?:string[],
     timeslots?:number[],
-    price? :number
+    price? :number,
+    about?:string
 }
 
 
@@ -79,30 +80,107 @@ mentorRouter.post("/signup",async(req,res)=>{
 })
 
 
+mentorRouter.post("/search", authMiddleware, async (req, res) => {
+  try {
+    const {
+      username: searchname,
+      selectedTags,
+      university
+    }: {
+      username?: string;
+      selectedTags?: string[];
+      university?: string;
+    } = req.body;
 
-mentorRouter.post("/search",authMiddleware,async(req,res)=>{
-    try {
-        const {username:searchname,selectedTags:specializations,university}:{username:string|undefined,selectedTags:string[]|undefined,university:string|undefined}= req.body;
-        console.log("search",searchname)
-        // return res.json({searchname,specializations,university});
-        if (!searchname && !specializations?.length && !university) {
-            return res.status(303).json({ message: "No search criteria provided!" });
-          }
-        const users = await prisma.mentor.findMany({
-        where:{
-           username :searchname ?  {contains : searchname as string }:undefined,
-           specializations :specializations? {hasEvery : specializations}:undefined,
-           university :university ? { contains: university } : undefined
-        }
-    })
-    //username:{contains:searchname as string}
-    // console.log("found users",filter);
-    
-    return res.json({message:`success`,users:users})
-    } catch (error) {
-        console.log("errro in fiding user",error)
+    if (!searchname && !selectedTags?.length && !university) {
+      return res.status(400).json({
+        message: "No search criteria provided!"
+      });
     }
-})
+
+    const users = await prisma.mentor.findMany({
+      where: {
+        username: searchname
+          ? {
+              contains: searchname,
+              mode: "insensitive"
+            }
+          : undefined,
+
+        specializations:
+          selectedTags && selectedTags.length > 0
+            ? {
+                hasEvery: selectedTags
+              }
+            : undefined,
+
+        university: university
+          ? {
+              contains: university,
+              mode: "insensitive"
+            }
+          : undefined
+      },
+
+      include: {
+        reviews: {
+        include: {
+            user: {
+            select: {
+                id: true,
+                username: true,
+                imageUrl: true
+            }
+            }
+        }
+        }
+  }
+    });
+    console.log(users)
+    return res.json({
+      message: "success",
+      users
+    });
+  } catch (error) {
+    console.log("error in finding mentor", error);
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+});
+
+mentorRouter.get(
+  "/meetings",
+  authMentorMiddleware,
+  async (req: CustomRequest, res) => {
+
+    try {
+
+      const meetings = await prisma.meeting.findMany({
+        where: {
+          mentorId: req.user.id,
+        },
+
+        orderBy: {
+          scheduledAt: "desc",
+        },
+      });
+
+      return res.json({
+        meetings,
+      });
+
+    } catch (error) {
+
+      console.log(error);
+
+      return res.status(500).json({
+        message: "Failed to fetch meetings",
+      });
+    }
+  }
+);
 
 mentorRouter.get(`/:id`,authMiddleware,async(req,res)=>{
     try {
@@ -139,13 +217,15 @@ mentorRouter.get(`/:id`,authMiddleware,async(req,res)=>{
 mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
 
     try {
-    const {price,username,imageUrl,university,specializations,timeslots}:UpdateMentor= req.body;
-    
+    const {price,username,imageUrl,university,specializations,timeslots,about}:UpdateMentor= req.body;
+
     const mentorDataToUpdate:UpdateMentor = {};
     if (username) mentorDataToUpdate.username = username;
     if (imageUrl) mentorDataToUpdate.imageUrl = imageUrl;
     if (university) mentorDataToUpdate.university = university;
+    if (about) mentorDataToUpdate.about = about;
     if (specializations) mentorDataToUpdate.specializations = specializations;
+    if (specializations) mentorDataToUpdate.price = price;
     if (specializations) mentorDataToUpdate.price = price;
     if(timeslots){
         // return res.json({message:"No time slots"});
@@ -157,7 +237,6 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
         }
         mentorDataToUpdate.timeslots = timeslots;
     };
-    
     const userId = req.user.id;
     const userUpdated = await prisma.mentor.update({
         where:{
@@ -173,5 +252,103 @@ mentorRouter.put("/update",authMentorMiddleware,async(req:CustomRequest,res)=>{
     }
 })
 
+mentorRouter.post(
+  "/review/:mentorId",
+  authMiddleware,
+  async (req: CustomRequest, res) => {
+    try {
+
+      const { mentorId } = req.params;
+
+      const { rating, comment } = req.body;
+
+      const userId = req.user.id;
+
+      // VALIDATION
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({
+          message: "Rating must be between 1 and 5",
+        });
+      }
+
+      if (!comment || comment.trim() === "") {
+        return res.status(400).json({
+          message: "Comment is required",
+        });
+      }
+
+      // CHECK MENTOR EXISTS
+      const mentorExists = await prisma.mentor.findUnique({
+        where: {
+          id: mentorId,
+        },
+      });
+
+      if (!mentorExists) {
+        return res.status(404).json({
+          message: "Mentor not found",
+        });
+      }
+
+      // CREATE OR UPDATE REVIEW
+      const review = await prisma.review.upsert({
+        where: {
+          userId_mentorId: {
+            userId,
+            mentorId,
+          },
+        },
+
+        update: {
+          rating,
+          comment,
+        },
+
+        create: {
+          rating,
+          comment,
+          userId,
+          mentorId,
+        },
+      });
+
+      // RECALCULATE AVG RATING
+      const allReviews = await prisma.review.findMany({
+        where: {
+          mentorId,
+        },
+      });
+
+      const avgRating =
+        allReviews.reduce((acc, curr) => {
+          return acc + curr.rating;
+        }, 0) / allReviews.length;
+
+      // UPDATE MENTOR RATING
+      await prisma.mentor.update({
+        where: {
+          id: mentorId,
+        },
+
+        data: {
+          rating: Number(avgRating.toFixed(1)),
+        },
+      });
+
+      return res.json({
+        message: "Review added successfully",
+        review,
+      });
+
+    } catch (error) {
+
+      console.log("Review error", error);
+
+      return res.status(500).json({
+        message: "Failed to add review",
+      });
+    }
+  }
+);
 
 export {mentorRouter};

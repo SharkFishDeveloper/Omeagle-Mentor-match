@@ -21,6 +21,8 @@ model User {
   imageUrl String?
   roomId String[]
   mentorName String[]
+  reviews     Review[]
+  meetings Meeting[]
 }
 
 model Mentor {
@@ -28,16 +30,56 @@ model Mentor {
   email String @unique
   password String 
   username String
+  about String @default("")
   university String @default("")
   specializations String[] 
   rating Float @default(0)
   userMentored Int @default(0)
   mentoredId String[]
-  comments String[]
   imageUrl String?
   popularity Int @default(0)
   timeslots Int[]
   usersName String[]
   roomId String[]
   price Int @default(0)
+  reviews         Review[]
+  meetings Meeting[]
+}
+model Meeting {
+  id            String   @id @default(uuid())
+
+  roomId        String   @unique
+
+  mentorId      String
+  userId        String
+
+  mentorName    String
+  userName      String
+
+  scheduledAt   DateTime
+
+  status        String   @default("upcoming")
+  // upcoming | completed | cancelled
+
+  createdAt     DateTime @default(now())
+
+  mentor        Mentor   @relation(fields: [mentorId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id          String   @id @default(uuid())
+
+  rating      Int
+  comment     String
+
+  createdAt   DateTime @default(now())
+
+  userId      String
+  mentorId    String
+
+  user         User    @relation(fields: [userId], references: [id])
+  mentor       Mentor  @relation(fields: [mentorId], references: [id])
+
+  @@unique([userId, mentorId]) // one review per user per mentor
 }

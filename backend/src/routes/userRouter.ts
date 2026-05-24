@@ -165,4 +165,144 @@ userRouter.put("/connect-with-mentor/:id",authMiddleware,async(req,res)=>{
     }
 })
 
+userRouter.post(
+  "/book-session/:mentorId",
+  authMiddleware,
+  async (req: CustomRequest, res) => {
+
+    try {
+
+      const { mentorId } = req.params;
+
+      const {
+        selectedTime,
+        selectedDate,
+        money,
+      } = req.body;
+
+      const userId = req.user.id;
+
+      // FIND USER
+      const user = await prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      // FIND MENTOR
+      let mentor = await prisma.mentor.findUnique({
+        where: {
+          id: mentorId,
+        },
+      });
+
+      if (!mentor) {
+        return res.status(404).json({
+          message: "Mentor not found",
+        });
+      }
+
+      // PAYMENT CHECK
+      if (mentor.price !== money) {
+        return res.status(400).json({
+          message: "Please enter correct amount",
+        });
+      }
+
+      // GENERATE ROOM ID
+      const roomId = uuidv4();
+
+      // DATE + TIME
+      const scheduledAt = new Date(
+        `2026-05-${selectedDate} ${selectedTime}`
+      );
+
+      // CREATE MEETING
+      const meeting = await prisma.meeting.create({
+        data: {
+
+          roomId,
+
+          mentorId: mentor.id,
+          userId: user.id,
+
+          mentorName: mentor.username,
+          userName: user.username,
+
+          scheduledAt,
+
+          status: "upcoming",
+        },
+      });
+
+      // UPDATE MENTOR STATS
+      mentor = await prisma.mentor.update({
+        where: {
+          id: mentorId,
+        },
+
+        data: {
+          userMentored: {
+            increment: 1,
+          },
+        },
+      });
+
+      return res.json({
+        message: "Meeting booked successfully",
+        roomId,
+        meeting,
+        mentor,
+        user,
+      });
+
+    } catch (error) {
+
+      console.log(error);
+
+      return res.status(500).json({
+        message: "Booking failed",
+      });
+    }
+  }
+);
+
+userRouter.get(
+  "/meetings",
+  authMiddleware,
+  async (req: CustomRequest, res) => {
+
+    try {
+
+      const meetings = await prisma.meeting.findMany({
+        where: {
+          userId: req.user.id,
+        },
+
+        orderBy: {
+          scheduledAt: "desc",
+        },
+      });
+
+      return res.json({
+        meetings,
+      });
+
+    } catch (error) {
+
+      console.log(error);
+
+      return res.status(500).json({
+        message: "Failed to fetch meetings",
+      });
+    }
+  }
+);
+
 export {userRouter};
